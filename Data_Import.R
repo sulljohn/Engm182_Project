@@ -11,3 +11,12 @@ df <- read_csv("../Data/Crimes_2006-2017/NYPD_Complaint_Data_Historic.csv")
 #Omkar was here:Test
 
 # John was here
+
+#dim(df)
+
+library(MASS)                 # load the MASS package 
+crimetype = df$OFNS_DESC     # the painter schools 
+crimetype.freq = table(crimetype)   # apply the table function
+
+barplot(crimetype.freq)         # apply the barplot function
+
