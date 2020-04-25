@@ -8,15 +8,13 @@ setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
 # Reading data
 df <- read_csv("../Data/Crimes_2006-2017/NYPD_Complaint_Data_Historic.csv")
 
-#Omkar was here:Test
+# Barplot of crimes by frequency
+# Source: http://www.r-tutor.com/elementary-statistics/qualitative-data/bar-graph
+crimetype = df$OFNS_DESC
+crimetype.freq = table(crimetype)
+barplot(crimetype.freq)
 
-# John was here
-
-#dim(df)
-
-library(MASS)                 # load the MASS package 
-crimetype = df$OFNS_DESC     # the painter schools 
-crimetype.freq = table(crimetype)   # apply the table function
-
-barplot(crimetype.freq)         # apply the barplot function
-
+# Histogram of dates
+# Source: https://stat.ethz.ch/R-manual/R-devel/library/graphics/html/hist.POSIXt.html
+df$Date <- as.Date(df$CMPLNT_FR_DT, "%m/%d/%Y")
+hist(df$Date, "years", freq = TRUE)
