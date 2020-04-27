@@ -1,19 +1,16 @@
+# Setting working directory to the current directory
+# Source: https://stackoverflow.com/questions/13672720/r-command-for-setting-working-directory-to-source-file-location-in-rstudio
+setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
+
 # Run separate import scripts ...
 
 # Housing is imported first because it clears other variables
-source("Import_Housing_Data.R")
+source("Import_Scripts/Import_Housing_Data.R")
 
 # Importing crime data
-source("Import_Crime_Data.R")
+source("Import_Scripts/Import_Crime_Data.R")
 
-# EXPORTING DATA TO RDA FILES
-# Once these have been made fresh, they should be used for analysis
-
-# Saving crime data (must save dataframe, so no extra classes for Tableau)
-# Source: https://discuss.analyticsvidhya.com/t/how-to-drop-a-variable-in-r/7324
-tmp_crime <- as.data.frame(df_crime)
-save(tmp_crime, file='Data_Crime.rda')
-rm(tmp_crime)
-
-# Saving housing data
-save(df_housing, file='Data_Housing.rda')
+# Saving the workspace (it will be gitignored)
+# Once this has been made fresh,
+# it should be used for analysis
+save.image(file='Data_ALL.RData')

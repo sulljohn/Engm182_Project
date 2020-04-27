@@ -3,8 +3,6 @@ library(readxl)
 library(data.table)
 library(janitor)
 
-setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
-
 # Get list of all excel file names for 2003-2015 and 2019-2020 data
 all_files = c(
   list.files(path="../Data/RE_2003-2015", pattern="*.xls", full.names=TRUE, recursive=FALSE),
