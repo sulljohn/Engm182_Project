@@ -5,6 +5,7 @@
 .Ruserdata
 
 # These were added later to keep temporary files out
+*.rda
 *.RData
 bin/
 .ipynb_checkpoints/
