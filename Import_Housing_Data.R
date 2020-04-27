@@ -44,8 +44,8 @@ dfs_list = lapply(all_files, function(filename) {
 dfs_list = append(dfs_list, list(read_csv("../Data/RE_2016-2017/nyc-rolling-sales.csv")[,-(1)] %>% clean_names()))
 
 # Combine list of data frames into a single data frame
-df = rbindlist(dfs_list)
+df_housing = rbindlist(dfs_list)
 
 # Clear all other variables from workspace
-rm(list=setdiff(ls(), "df"))
+rm(list=setdiff(ls(), "df_housing"))
 

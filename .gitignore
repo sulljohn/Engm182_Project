@@ -1,4 +1,10 @@
+# These came default with the project
 .Rproj.user
 .Rhistory
 .RData
 .Ruserdata
+
+# These were added later to keep temporary files out
+*.RData
+bin/
+.ipynb_checkpoints/
