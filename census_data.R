@@ -1,5 +1,5 @@
 #Code for census data
-block_loc <- read.csv("census_block_loc.csv")
+block_loc <- read.csv("../Data/census_block_loc.csv")
 head(block_loc)
 summary(block_loc)
 nrow(block_loc)
