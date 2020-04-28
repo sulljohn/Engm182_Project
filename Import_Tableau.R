@@ -13,6 +13,9 @@ source("Import_Scripts/Import_Housing_Data.R")
 # Importing crime data
 source("Import_Scripts/Import_Crime_Data_Tableau.R")
 
+#Importing census data
+source("Import_Scripts/Import_Census.R")
+
 # EXPORTING DATA TO RDA FILES
 # Once these have been made fresh, they should be used for analysis
 
@@ -21,3 +24,7 @@ save(df_crime, file='Data_Crime.rda')
 
 # Saving housing data
 save(df_housing, file='Data_Housing.rda')
+
+# Saving census data
+save(block_loc, file='Data_NYC_Census.rda')
+save(nyc_tracts, file='Data_NYC_Tracts.rda')

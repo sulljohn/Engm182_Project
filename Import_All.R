@@ -10,6 +10,9 @@ source("Import_Scripts/Import_Housing_Data.R")
 # Importing crime data
 source("Import_Scripts/Import_Crime_Data.R")
 
+#Importing census data
+source("Import_Scripts/Import_Census_Data.R")
+
 # Saving the workspace (it will be gitignored)
 # Once this has been made fresh,
 # it should be used for analysis
