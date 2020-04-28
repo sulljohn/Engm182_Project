@@ -14,7 +14,7 @@ source("Import_Scripts/Import_Housing_Data.R")
 source("Import_Scripts/Import_Crime_Data_Tableau.R")
 
 #Importing census data
-source("Import_Scripts/Import_Census.R")
+source("Import_Scripts/Import_Census_Data.R")
 
 # EXPORTING DATA TO RDA FILES
 # Once these have been made fresh, they should be used for analysis
