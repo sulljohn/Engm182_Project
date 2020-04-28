@@ -1,5 +1,5 @@
 #Code for census data
-block_loc <- read.csv("../Data/census_block_loc.csv")
+block_loc <- read.csv("../Data/Census_2015/census_block_loc.csv")
 head(block_loc)
 summary(block_loc)
 nrow(block_loc)
@@ -42,7 +42,7 @@ block_loc_Passaic <- filter(block_loc, County == "Passaic") #1539 locations
 block_loc_Morris <- filter(block_loc, County == "Morris") #29 locations
 
 #importing nyc census tracts file
-nyc_tracts <- read.csv("nyc_census_tracts.csv")
+nyc_tracts <- read.csv("../Data/Census_2015/nyc_census_tracts.csv")
 head(nyc_tracts)
 
 #Splitting this into different dataframes
