@@ -1,45 +1,26 @@
 # Clean data from rda files here
 
 library(tidyverse)
-library(tidygeocoder)
-library(strinr)
+library(geoclient)
 
 load("Data_Housing.rda")
 
-# Put boroughs in vector with correct ID (do not change the order of this vector!)
-
-boroughs = c(
-  "New York", # 1 (for manhatten addresses the city is given as 'New York')
-  "Bronx", # 2
-  "Brooklyn", # 3
-  "Queens", # 4
-  "Staten Island" # 5
-)
-
-get_cities = function(borough_ids, neighborhoods) {
-  cities = ifelse(borough_ids == 4, neighborhoods, boroughs[borough_ids])
-  return(cities)
-}
-
+# Convert chr variables to numerics
 df_housing$borough = as.numeric(df_housing$borough)
 df_housing$sale_price = as.numeric(df_housing$sale_price)
 df_housing$gross_square_feet = as.numeric(df_housing$gross_square_feet)
 
+# Get only data with valid sale prices, square footages, build borough-block-lot (BBL) ID for geocoding
 clean_df_housing = df_housing %>%
   filter(sale_price > 100) %>%
   filter(gross_square_feet > 1) %>%
-  filter(borough %in% c(1:5))
+  mutate(bbl = borough * 1e9 + block * 1e4 + lot)
 
-clean_df_housing = within(clean_df_housing, {
-  full_address = paste(
-    address,
-    ", ",
-    get_cities(borough, neighborhood),
-    ", NY",
-    sep=""
-  )
-})
+# Get BBL data (including lat and long) from NYC Geoclient API -- THIS WILL TAKE 7 HRS TO RUN! Ask Carter for the the file if you don't want to wait.
+bbl_df = geo_bbl(clean_df_housing$bbl, id="a86acdae", key="029728ea05cb18e7aba7cf2bafcb9c1a")
 
+# Join the housing data with BBL data
+clean_df_housing = bind_cols(clean_df_housing, bbl_df)
 
+# Save data as rda file
 save(clean_df_housing, file="clean_housing.rda")
-rm(clean_df_housing, df_housing, boroughs, get_cities)
