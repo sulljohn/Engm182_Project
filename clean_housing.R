@@ -1,26 +1,52 @@
-# Clean data from rda files here
+#Trim and clean geocoded housing data
 
 library(tidyverse)
-library(geoclient)
+library(stringr)
+library(postmastr)
 
-load("Data_Housing.rda")
+load("geocoded_housing.rda")
 
-# Convert chr variables to numerics
-df_housing$borough = as.numeric(df_housing$borough)
-df_housing$sale_price = as.numeric(df_housing$sale_price)
-df_housing$gross_square_feet = as.numeric(df_housing$gross_square_feet)
+clean_address = function(address) {
+  address = str_to_title(str_replace_all(str_trim(address), "\\s+", " "))
+  #cap_grps = str_match(address, "(Drive|Parkway|Street|Turnpike|Place|Road|Avenue|Alley|Highway|Lane|Route)[\\s,](.*)")
+  #cap_grps = str_match_all(address, )
+  return(address)
+}
 
-# Get only data with valid sale prices, square footages, build borough-block-lot (BBL) ID for geocoding
-clean_df_housing = df_housing %>%
-  filter(sale_price > 100) %>%
-  filter(gross_square_feet > 1) %>%
-  mutate(bbl = borough * 1e9 + block * 1e4 + lot)
-
-# Get BBL data (including lat and long) from NYC Geoclient API -- THIS WILL TAKE 7 HRS TO RUN! Ask Carter for the the file if you don't want to wait.
-bbl_df = geo_bbl(clean_df_housing$bbl, id="a86acdae", key="029728ea05cb18e7aba7cf2bafcb9c1a")
-
-# Join the housing data with BBL data
-clean_df_housing = bind_cols(clean_df_housing, bbl_df)
-
-# Save data as rda file
-save(clean_df_housing, file="clean_housing.rda")
+cleaned_df_housing = geocoded_df_housing %>%
+  select(
+    borough,
+    neighborhood,
+    building_class_category,
+    tax_class_at_present,
+    block,
+    lot,
+    building_class_at_present,
+    address,
+    apartment_number,
+    zip_code,
+    residential_units,
+    commercial_units,
+    total_units,
+    land_square_feet,
+    gross_square_feet,
+    year_built,
+    tax_class_at_time_of_sale,
+    building_class_at_time_of_sale,
+    sale_price,
+    sale_date,
+    bbl,
+    buildingIdentificationNumber,
+    cooperativeIdNumber,
+    gi5DigitStreetCode1,
+    giHighHouseNumber1,
+    giLowHouseNumber1,
+    giStreetName1,
+    latitudeInternalLabel,
+    longitudeInternalLabel
+  ) %>%
+  rename(lat = latitudeInternalLabel) %>%
+  rename(lng = longitudeInternalLabel) %>%
+  mutate(address = sapply(address, clean_address))
+  
+save(cleaned_df_housing, file="cleaned_housing.rda")

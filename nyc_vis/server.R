@@ -11,24 +11,22 @@ library(tidyverse)
 library(shiny)
 library(leaflet)
 
-source("Import_All.R")
-
 #df_original <- read_csv("./data/processed/2020-04-14-covid.csv")
 #pal <- colorFactor(c("firebrick", "steelblue"), c(FALSE, TRUE))
 
-load("../clean_housing.rda")
+load("../cleaned_housing.rda")
 
-lng1 <- 74.2
-lat1 <- 40.6
-lng2 <- 73.8
-lat2 <- 40.8
+lng1 <- min(cleaned_df_housing$lng)
+lat1 <- min(cleaned_df_housing$lat)
+lng2 <- max(cleaned_df_housing$lng)
+lat2 <- max(cleaned_df_housing$lat)
 
 # Define server logic required to draw a histogram
 shinyServer(function(input, output) {
 
     df <- reactive({
         # This is the same code we used to filter to the latest date in last week's lesson!
-        tmp <- clean_housing
+        tmp <- cleaned_df_housing
         #     filter(date == input$date_select)
         
         return(tmp)
