@@ -47,6 +47,8 @@ cleaned_df_housing = geocoded_df_housing %>%
   ) %>%
   rename(lat = latitudeInternalLabel) %>%
   rename(lng = longitudeInternalLabel) %>%
-  mutate(address = sapply(address, clean_address))
-  
+  mutate(address = sapply(address, clean_address)) %>%
+  filter(!(is.na(lat) | is.na(lng)))
+
+
 save(cleaned_df_housing, file="cleaned_housing.rda")

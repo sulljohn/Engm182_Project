@@ -26,8 +26,8 @@ shinyServer(function(input, output) {
 
     df <- reactive({
         # This is the same code we used to filter to the latest date in last week's lesson!
-        tmp <- cleaned_df_housing
-        #     filter(date == input$date_select)
+        tmp <- cleaned_df_housing %>%
+            filter(sale_date >= input$date_range[1] & sale_date <= input$date_range[2])
         
         return(tmp)
     })
@@ -35,8 +35,8 @@ shinyServer(function(input, output) {
     output$map <- renderLeaflet({
         
         leaflet() %>%
-            addTiles() %>%
-            fitBounds(lng1, lat1, lng2, lat2)
+            addTiles()
+            #fitBounds(lng1, lat1, lng2, lat2)
             # addLegend("bottomright", 
             #           pal = pal, 
             #           values = c(FALSE, TRUE),
@@ -50,7 +50,9 @@ shinyServer(function(input, output) {
         
         leafletProxy("map", data = df()) %>%
             clearMarkers() %>%
-            addCircleMarkers()
+            addCircleMarkers(
+                clusterOptions = markerClusterOptions()
+            )
                  #radius = ~sqrt(get(input$size_by)),
                  # stroke = FALSE,
                  # fillOpacity = 0.5,

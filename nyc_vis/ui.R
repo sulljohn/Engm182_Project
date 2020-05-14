@@ -7,18 +7,22 @@
 #    http://shiny.rstudio.com/
 #
 
+
 library(shiny)
 library(leaflet)
 
-# Define UI for application that draws a histogram
-shinyUI(fluidPage(
+load("../cleaned_housing.rda")
 
-    # Application title
-    title = "New York City Housing and Crime Trends",
-    titlePanel("New York City Housing and Crime Trends"),
-    fluidRow(
-        column(12,
-               mainPanel(leafletOutput("map"))
+# Define UI for application that draws a histogram
+shinyUI(sidebarLayout(
+    mainPanel(leafletOutput("map")),
+    sidebarPanel(
+        sliderInput(
+            "date_range",
+            "Select Date Range",
+            min=as.Date(min(cleaned_df_housing$sale_date)),
+            max=as.Date(max(cleaned_df_housing$sale_date)),
+            value = c(as.Date("2019-01-01"), as.Date("2020-01-01"))
         )
     )
     # hr(),
