@@ -17,6 +17,9 @@ X <- as.numeric(X[[1]])
 y <- df %>% select("sale_price")
 y <- as.numeric(y[[1]])
 
+# Trying it as a matrix, works better ...
+X2 <- data.matrix(X)
+
 # Examine datatype for each column
 sapply(X, class)
 sapply(y, class)
@@ -43,7 +46,7 @@ sapply(y, class)
 # You may have to do this before running the regressions:
 # https://stackoverflow.com/questions/51295402/r-on-macos-error-vector-memory-exhausted-limit-reached
 
-fit <- fastLm(X, y)
+fit <- fastLm(X2, y)
 summary(fit)
 
 # Include in report table of findings for the different regressions and the p-values
