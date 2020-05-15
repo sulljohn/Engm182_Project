@@ -15,4 +15,4 @@ grouped_data = cleaned_df_housing %>%
         total_proceeds = sum(sale_price)
     )
 
-save(grouped_data, "group_data.rda")
+save(grouped_data, file="grouped_data.rda")
