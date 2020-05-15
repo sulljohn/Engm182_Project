@@ -15,16 +15,24 @@ load("../cleaned_housing.rda")
 
 # Define UI for application that draws a histogram
 shinyUI(sidebarLayout(
-    mainPanel(leafletOutput("map")),
     sidebarPanel(
         sliderInput(
             "date_range",
             "Select Date Range",
             min=as.Date(min(cleaned_df_housing$sale_date)),
             max=as.Date(max(cleaned_df_housing$sale_date)),
-            value = c(as.Date("2019-01-01"), as.Date("2020-01-01"))
+            value = c(as.Date("2019-01-01"), as.Date("2020-01-01")),
+            width = "20%"
         )
-    )
+    ),
+    mainPanel(
+        leafletOutput(
+            "map",
+            width="80%",
+            height=400
+        )
+    ),
+    position="left"
     # hr(),
     # fluidRow(
     #     column(4,        

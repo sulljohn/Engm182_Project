@@ -35,8 +35,8 @@ shinyServer(function(input, output) {
     output$map <- renderLeaflet({
         
         leaflet() %>%
-            addTiles()
-            #fitBounds(lng1, lat1, lng2, lat2)
+            addTiles() %>%
+            fitBounds(lng1, lat1, lng2, lat2)
             # addLegend("bottomright", 
             #           pal = pal, 
             #           values = c(FALSE, TRUE),

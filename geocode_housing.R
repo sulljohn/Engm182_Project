@@ -12,7 +12,7 @@ df_housing$gross_square_feet = as.numeric(df_housing$gross_square_feet)
 
 # Get only data with valid sale prices, square footages, build borough-block-lot (BBL) ID for geocoding
 df_housing = df_housing %>%
-  filter(sale_price > 100) %>%
+  filter(sale_price > 0) %>%
   filter(gross_square_feet > 1) %>%
   mutate(bbl = borough * 1e9 + block * 1e4 + lot)
 
