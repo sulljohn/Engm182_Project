@@ -12,10 +12,11 @@ library(shiny)
 library(leaflet)
 library(shinyWidgets)
 
-load("../grouped_data.rda")
+load("../grouped_housing.rda")
 
 # Define UI for application that draws a histogram
 shinyUI(fluidPage(
+    titlePanel("NYC Housing and Crime"),
     sidebarLayout(
         sidebarPanel(
             sliderTextInput(
@@ -30,12 +31,11 @@ shinyUI(fluidPage(
             leafletOutput(
                 "map",
                 width="100%",
-                height="100vh"
+                height="90vh"
             )
         ),
         position="left"
-    ),
-    title="NYC Housing and Crime Data"
+    )
     # hr(),
     # fluidRow(
     #     column(4,        
