@@ -1,0 +1,57 @@
+# Code source: https://stackoverflow.com/questions/46267287/reverse-geocoding-speed
+# Data source: https://jsspina.carto.com/tables/nyc_zip_code_tabulation_areas_polygons/public/map
+
+library(sf)
+library(dplyr)
+library(lubridate)
+
+# Test source
+# sf <- sf::st_read("https://raw.githubusercontent.com/blackmad/neighborhoods/master/new-york-city-boroughs.geojson")
+
+# Real source
+sf <- sf::st_read("nyc_zip_code_tabulation_areas_polygons.geojson")
+
+# Test data
+# latitude <- c(40.84935,40.76306,40.81423,40.63464,40.71054)
+# longitude <- c(-73.87119,-73.90235,-73.93443,-73.88090,-73.83765)
+
+df_crime2 <- na.omit(df_crime2, cols=c("Latitude", "Longitude"))
+
+# Real data
+CMPLNT_NUM <- c(df_crime$CMPLNT_NUM)
+latitude <- c(df_crime$Latitude)
+longitude <- c(df_crime$Longitude)
+
+x = data.frame(CMPLNT_NUM, longitude, latitude)
+x <- na.omit(x)
+
+sf_x <- sf::st_as_sf(x, coords = c("longitude", "latitude"))
+
+## set the cooridnate reference systesm to be the same
+st_crs(sf_x) <- st_crs(sf)
+
+res <- st_within(sf_x, sf)  ## return the indexes of sf that sf_x are within
+
+## view the results
+out <- sapply(res, function(x) as.character(sf$postalcode[x]))
+
+sf_x$zipcode <- out
+
+df_crime_w_zipcodes <- left_join(df_crime, sf_x, by="CMPLNT_NUM")
+
+# Saving the data
+save(df_crime_w_zipcodes, file='Data_Crime_w_Zipcodes.rda')
+
+# Format column as dates
+df_crime_w_zipcodes$CMPLNT_FR_DT <- as.Date(df_crime_w_zipcodes$CMPLNT_FR_DT, format = "%m/%d/%Y")
+
+# Format zipcodes as factors
+df_crime_w_zipcodes$zipcode <- lapply(df_crime_w_zipcodes$zipcode, factor)
+
+df_crime_w_zipcodes <- transform(df_crime_w_zipcodes,species=unlist(zipcode))
+
+
+# Group by month; source: https://stackoverflow.com/questions/33221425/how-do-i-group-my-date-variable-into-month-year-in-r
+tmp <- df_crime_w_zipcodes %>% group_by(month=floor_date(CMPLNT_FR_DT, "month"), zipcode)  %>% summarize(summary_variable=sum(KY_CD))
+
+tmp <- df_crime_w_zipcodes %>% group_by(OFNS_DESC)  %>% summarize(summary_variable=sum(KY_CD))
