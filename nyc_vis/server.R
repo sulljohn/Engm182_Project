@@ -14,20 +14,16 @@ library(leaflet)
 #df_original <- read_csv("./data/processed/2020-04-14-covid.csv")
 #pal <- colorFactor(c("firebrick", "steelblue"), c(FALSE, TRUE))
 
-load("../cleaned_housing.rda")
+load("../grouped_data.rda")
 
-lng1 <- min(cleaned_df_housing$lng)
-lat1 <- min(cleaned_df_housing$lat)
-lng2 <- max(cleaned_df_housing$lng)
-lat2 <- max(cleaned_df_housing$lat)
 
 # Define server logic required to draw a histogram
 shinyServer(function(input, output) {
 
     df <- reactive({
         # This is the same code we used to filter to the latest date in last week's lesson!
-        tmp <- cleaned_df_housing %>%
-            filter(sale_date >= input$date_range[1] & sale_date <= input$date_range[2])
+        tmp <- grouped_data %>%
+            filter(month == input$date_select)
         
         return(tmp)
     })
@@ -36,7 +32,7 @@ shinyServer(function(input, output) {
         
         leaflet() %>%
             addTiles() %>%
-            fitBounds(lng1, lat1, lng2, lat2)
+            setView(-74.0060,40.7128, zoom=10)
             # addLegend("bottomright", 
             #           pal = pal, 
             #           values = c(FALSE, TRUE),
@@ -49,10 +45,7 @@ shinyServer(function(input, output) {
     observe({
         
         leafletProxy("map", data = df()) %>%
-            clearMarkers() %>%
-            addCircleMarkers(
-                clusterOptions = markerClusterOptions()
-            )
+            clearMarkers()
                  #radius = ~sqrt(get(input$size_by)),
                  # stroke = FALSE,
                  # fillOpacity = 0.5,
