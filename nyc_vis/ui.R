@@ -10,29 +10,32 @@
 
 library(shiny)
 library(leaflet)
+library(shinyWidgets)
 
-load("../cleaned_housing.rda")
+load("../grouped_data.rda")
 
 # Define UI for application that draws a histogram
-shinyUI(sidebarLayout(
-    sidebarPanel(
-        sliderInput(
-            "date_range",
-            "Select Date Range",
-            min=as.Date(min(cleaned_df_housing$sale_date)),
-            max=as.Date(max(cleaned_df_housing$sale_date)),
-            value = c(as.Date("2019-01-01"), as.Date("2020-01-01")),
-            width = "20%"
-        )
+shinyUI(fluidPage(
+    sidebarLayout(
+        sidebarPanel(
+            sliderTextInput(
+                inputId = "date_select",
+                label="Month",
+                choices = sort(unique(grouped_data$month)),
+                animate=TRUE,
+                selected="2020-01"
+            )
+        ),
+        mainPanel(
+            leafletOutput(
+                "map",
+                width="100%",
+                height="100vh"
+            )
+        ),
+        position="left"
     ),
-    mainPanel(
-        leafletOutput(
-            "map",
-            width="80%",
-            height=400
-        )
-    ),
-    position="left"
+    title="NYC Housing and Crime Data"
     # hr(),
     # fluidRow(
     #     column(4,        
@@ -79,3 +82,4 @@ shinyUI(sidebarLayout(
     #     )
     # )
 ))
+    
