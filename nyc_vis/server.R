@@ -14,7 +14,7 @@ library(leaflet)
 #df_original <- read_csv("./data/processed/2020-04-14-covid.csv")
 #pal <- colorFactor(c("firebrick", "steelblue"), c(FALSE, TRUE))
 
-load("../grouped_data.rda")
+load("../grouped_housing.rda")
 
 
 # Define server logic required to draw a histogram
