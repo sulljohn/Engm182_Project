@@ -46,6 +46,9 @@ df_crime2$weight[which(df_crime2$OFNS_DESC %in% felony_2nddegree == TRUE)]=5
 df_crime2$weight[which(df_crime2$OFNS_DESC %in% felony_3rddegree == TRUE)]=4
 df_crime2$weight[which(df_crime2$OFNS_DESC %in% felony_4thdegree == TRUE)]=3
 
+df_crime <- df_crime2
+save(df_crime, file='Data_Crime.rda')
+
 #Extract month and year for each crime
 df_crime3 <- subset(df_crime2, select = c(CMPLNT_FR_DT, OFNS_DESC, LAW_CAT_CD, Longitude, Latitude, weight))
 head(df_crime3)

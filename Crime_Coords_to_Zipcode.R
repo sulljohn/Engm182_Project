@@ -1,4 +1,4 @@
-# Load df_crime first
+# Load df_crime first (after running thte crime_rating file)
 
 # Code source: https://stackoverflow.com/questions/46267287/reverse-geocoding-speed
 # Data source: https://jsspina.carto.com/tables/nyc_zip_code_tabulation_areas_polygons/public/map
@@ -47,15 +47,16 @@ out4 <- vapply(out3, paste, collapse = ", ", character(1L)) # Flattten listst; s
 sf_x$zipcode <- out4
 
 # Putting it back with the sf_data
-df_crime_w_zipcodes <- left_join(df_crime, sf_x, by = "CMPLNT_NUM")
+df_crime <- left_join(df_crime, sf_x, by = "CMPLNT_NUM")
 
 # Format column as dates
-df_crime_w_zipcodes$CMPLNT_FR_DT <- as.Date(df_crime_w_zipcodes$CMPLNT_FR_DT, format = "%m/%d/%Y")
+df_crime$CMPLNT_FR_DT <- as.Date(df_crime$CMPLNT_FR_DT, format = "%m/%d/%Y")
 
 # Saving the data
-save(df_crime_w_zipcodes, file='Data_Crime_w_Zipcodes.rda')
+save(df_crime, file='Data_Crime.rda')
 
-# Group by month; source: https://stackoverflow.com/questions/33221425/how-do-i-group-my-date-variable-into-month-year-in-r
-tmp <- df_crime_w_zipcodes %>% group_by(month=floor_date(CMPLNT_FR_DT, "month"), zipcode)  %>% summarize(summary_variable=mean(KY_CD))
+# Group by month and rating; source: https://stackoverflow.com/questions/33221425/how-do-i-group-my-date-variable-into-month-year-in-r
+# TODO: divide this by population for each zipcode
+score_by_time_and_rating <- df_crime %>% group_by(month=floor_date(CMPLNT_FR_DT, "month"), zipcode)  %>% summarize(summary_variable=mean(weight))
 
-tmp
+score_by_time_and_rating
