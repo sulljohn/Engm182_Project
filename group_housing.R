@@ -8,11 +8,10 @@ grouped_housing = cleaned_df_housing %>%
     mutate(sale_month = format(as.Date(sale_date), "%Y-%m")) %>%
     group_by(zip_code, sale_month) %>%
     summarize(
-        zip = zip_code[1],
-        month = sale_month[1],
-        avg_price_per_sqft = mean(sale_price/gross_square_feet),
+        avg_price_per_sqft = mean(price_per_sqft),
         num_sales = n(),
         total_proceeds = sum(sale_price)
-    )
-
+    ) %>%
+    filter(total_proceeds < 200000000)
+    
 save(grouped_housing, file="grouped_housing.rda")

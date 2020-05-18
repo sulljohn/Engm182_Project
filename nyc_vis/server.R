@@ -10,58 +10,74 @@
 library(tidyverse)
 library(shiny)
 library(leaflet)
+library(jsonlite)
+library(sf)
+library(rmapshaper)
 
-#df_original <- read_csv("./data/processed/2020-04-14-covid.csv")
-#pal <- colorFactor(c("firebrick", "steelblue"), c(FALSE, TRUE))
 
 load("../grouped_housing.rda")
 
+zip_sf = st_read("../nyc_zip_code_tabulation_areas_polygons.geojson", stringsAsFactors = FALSE)
+zip_sf = rmapshaper::ms_simplify(zip_sf, keep_shapes=TRUE)
 
-# Define server logic required to draw a histogram
 shinyServer(function(input, output) {
 
     df <- reactive({
-        # This is the same code we used to filter to the latest date in last week's lesson!
-        tmp <- grouped_data %>%
-            filter(month == input$date_select)
-        
+        data = grouped_housing %>%
+            filter(sale_month == input$date_select) %>%
+            select(zip_code, disp_data = !!input$data_select)
+        tmp = merge(zip_sf, data, by.x="postalcode", by.y="zip_code", all.x=TRUE)
         return(tmp)
     })
     
     output$map <- renderLeaflet({
-        
         leaflet() %>%
             addTiles() %>%
-            setView(-74.0060,40.7128, zoom=10)
-            # addLegend("bottomright", 
-            #           pal = pal, 
-            #           values = c(FALSE, TRUE),
-            #           title = input$color_by,
-            #           opacity = 1)
-        
-        
+            setView(-74.0060,40.7128, zoom=11)
     })
+    
+    
+    pal = eventReactive(input$data_select, {colorNumeric(
+        palette = "YlGnBu",
+        domain = pull(grouped_housing, !!input$data_select)
+    )})
     
     observe({
         
-        leafletProxy("map", data = df()) %>%
-            clearMarkers()
-                 #radius = ~sqrt(get(input$size_by)),
-                 # stroke = FALSE,
-                 # fillOpacity = 0.5,
-                 # color = ~pal(get(input$color_by)),
-                 # popup = ~paste0(
-                 #     "<b>", region, "</b><br/>",
-                 #     "Total confirmed cases to this date: ", confirmed_cases, "<br/>",
-                 #     "Per 100k people: ", confirmed_cases_per_100k, "<br/><br/>",
-                 #     "Total confirmed deaths to this date: ", deaths, "<br/>",
-                 #     "Per 100k people: ", deaths_per_100k, "<br/><br/>",
-                 #     "Cases in the preceding week: ", new_cases_week, "<br/>",
-                 #     "Per 100k people: ", new_cases_week_per_100k, "<br/><br/>",
-                 #     "Deaths in the preceding week: ", new_deaths_week, "<br/>",
-                 #     "Per 100k people: ", new_deaths_week_per_100k, "<br/><br/>",
-                 #     "Stay at home in place on this date: ", stay_at_home))
+        tmp = df()
+        
+        leafletProxy("map", data = tmp) %>%
+            clearShapes() %>%
+            addPolygons(
+                fillColor = ~pal()(disp_data),
+                color = "#b2aeae", # you need to use hex colors
+                fillOpacity = 0.7, 
+                weight = 1, 
+                smoothFactor = 0.2,
+                popup = ~paste0(
+                    "<b>", postalcode, "</b><br/>"
+                )
+            )
     })
     
+    observeEvent(input$data_select, {
+        tmp = df()
+        if (input$data_select == "avg_price_per_sqft") {
+            func = labelFormat(prefix = " $")
+        } else if (input$data_select == "total_proceeds") {
+            func = labelFormat(prefix = " $", suffix = "M", transform=function(x) x/1E6)
+        } else {
+            func = labelFormat(prefix = " ")
+        }
+        leafletProxy("map", data = tmp) %>%
+            clearControls() %>%
+            addLegend(
+                pal = pal(), 
+                values = ~pull(grouped_housing, !!input$data_select), 
+                position = "bottomright", 
+                title = input$data_select,
+                labFormat = func
+            )
+    })
 })
 
