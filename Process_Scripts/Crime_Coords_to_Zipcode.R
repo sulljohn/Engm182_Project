@@ -57,3 +57,4 @@ df_crime$geometry<-NULL
 
 # Saving the data with thet important information
 save(df_crime, file='Data_Crime_w_Zipcodes.rda')
+

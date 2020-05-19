@@ -21,3 +21,5 @@ zip_population <- subset(nyc_tracts, select = c(CensusTract,zipcode,TotalPop))
 
 save(zip_population, file = "Data_Zip_Population.rda")
 
+#Getting population of each zip code
+zip_population2 <- aggregate(zip_population$TotalPop, by = list(zip = zip_population$zipcode), FUN = sum)
