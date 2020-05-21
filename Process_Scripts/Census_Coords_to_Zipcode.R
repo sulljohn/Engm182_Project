@@ -8,7 +8,7 @@ library(plyr)
 
 tract_zips <- my_data <- read_excel("TRACT_ZIP_032020.xlsx")
 
-names(tract_zips)[names(tract_zips) == 'ZIP'] <- 'zipcode'
+names(tract_zips)[names(tract_zips) == 'ZIP'] <- 'zip_code'
 names(tract_zips)[names(tract_zips) == 'TRACT'] <- 'CensusTract'
 tract_zips$CensusTract <- as.numeric(tract_zips$CensusTract)
 
@@ -18,7 +18,7 @@ nyc_tracts <- left_join(nyc_tracts, tract_zips, by="CensusTract")
 # save(nyc_tracts, file='Data_NYC_Tracts.rda')
 
 #Adding all the parameters required for regression in zip_population file
-zip_population <- subset(nyc_tracts, select = c(CensusTract,zipcode,TotalPop, Men, Women, Hispanic, White, Black, Native, Asian, IncomePerCap, Unemployment))
+zip_population <- subset(nyc_tracts, select = c(CensusTract,zip_code,TotalPop, Men, Women, Hispanic, White, Black, Native, Asian, IncomePerCap, Unemployment))
 
 #Converting the demographic and unemployment percentages to numbers and income per capita to income
 zip_population$Hispanic.number <- zip_population$Hispanic*zip_population$TotalPop/100
@@ -31,8 +31,8 @@ zip_population$IncomeTot <- zip_population$IncomePerCap*zip_population$TotalPop
 zip_population$Unemployment.number <- zip_population$Unemployment*0.65*zip_population$TotalPop/100
 
 #Aggregating the various census tract data into 1 zip code
-zip_population <- subset(zip_population, select = c(zipcode,TotalPop, Men, Women, Hispanic.number, White.number, Black.number, Native.number, Asian.number, IncomeTot, Unemployment.number))
-zip_population <- aggregate(.~zipcode, data = zip_population, FUN = sum)
+zip_population <- subset(zip_population, select = c(zip_code,TotalPop, Men, Women, Hispanic.number, White.number, Black.number, Native.number, Asian.number, IncomeTot, Unemployment.number))
+zip_population <- aggregate(.~zip_code, data = zip_population, FUN = sum)
 
 #Convert back the demographics and unemployment to % and IncomeTot to per capita income
 zip_population$Hispanic.number <- zip_population$Hispanic.number*100/zip_population$TotalPop
