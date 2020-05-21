@@ -44,7 +44,7 @@ zip_population$IncomeTot <- zip_population$IncomeTot/zip_population$TotalPop
 zip_population$Unemployment.number <- zip_population$Unemployment.number*100/(0.65*zip_population$TotalPop)
 
 #Renaming the column headers
-colnames(zip_population) <- c("Zipcode", "TotalPop", "Men", "Women", "Hispanic", "White", "Black", "Native", "Asian", "PerCapitaIncome", "Unemployed")
+colnames(zip_population) <- c("zip_code", "TotalPop", "Men", "Women", "Hispanic", "White", "Black", "Native", "Asian", "PerCapitaIncome", "Unemployed")
 
 save(zip_population, file = "Data_Zip_Population.rda")
 
