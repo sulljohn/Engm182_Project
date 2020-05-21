@@ -12,6 +12,26 @@ df <- df[df$sale_price > 0, ]
 df <- df[!is.na(df$sale_price), ]
 df <- df[!is.na(df$land_square_feet), ]
 
+
+#Identify the input variables for sales price prediction
+#Zipcode (will be used to join census and crime data), land_square_feet, gross_square_feet, year built, tax_class_at_time_of_sale, building_class_at_time_of_sale, sale_date (will be used to link crime rating for that year)
+#Subset new dataframe with relevant variables
+df_sale <- subset(df, select = c(zip_code,land_square_feet, gross_square_feet, year_built, tax_class_at_time_of_sale, building_class_at_time_of_sale, sale_date, sale_price))
+df_sale$sale_year <- year(df_sale$sale_date) 
+df_sale$sale_month <- month(df_sale$sale_date)
+#If sale is in months 1, 2, 3 then crime score will be taken from previous year else crime score of that year
+df_sale$crime_score_year <- ifelse(df_sale$sale_month == 1 | df_sale$sale_month == 2 | df_sale$sale_month == 3, df_sale$sale_year-1, df_sale$sale_year)
+
+#Adding the census data by linking through zipcode
+#Taking a subset of df_sale for only the zip codes for which we have census data
+zip_codes_inhousing <- unique(df_sale$zip_code)
+zip_codes_incensus <- unique(zip_population$zip_code)
+zip_codes_inhousing_incensus <- intersect(zip_codes_inhousing, zip_codes_incensus)
+
+#Merging the sales and census data into one dataframe
+df_sale$zip_code <- as.character(df_sale$zip_code)
+df_sale_census <- merge(df_sale[df_sale$zip_code %in% zip_codes_inhousing_incensus, ], zip_population[zip_population$zip_code %in% zip_codes_inhousing_incensus, ], by = "zip_code")
+
 X <- df %>% select("land_square_feet")
 X <- as.numeric(X[[1]])
 y <- df %>% select("sale_price")
