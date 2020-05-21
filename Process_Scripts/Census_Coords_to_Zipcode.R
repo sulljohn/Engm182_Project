@@ -15,7 +15,7 @@ tract_zips$CensusTract <- as.numeric(tract_zips$CensusTract)
 nyc_tracts <- left_join(nyc_tracts, tract_zips, by="CensusTract")
 
 # Save updated nyc_tracs
-# save(nyc_tracts, file='Data_NYC_Tracts.rda')
+save(nyc_tracts, file='Data_NYC_Tracts.rda')
 
 #Adding all the parameters required for regression in zip_population file
 zip_population <- subset(nyc_tracts, select = c(CensusTract,zip_code,TotalPop, Men, Women, Hispanic, White, Black, Native, Asian, IncomePerCap, Unemployment))
