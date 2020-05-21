@@ -44,7 +44,7 @@ out2 <- map(out, 1) # Take first element from each list
 out3 <- lapply(out, function(x) ifelse(length(x) == 1, x[1], NA)) # Handle NAs
 out4 <- vapply(out3, paste, collapse = ", ", character(1L)) # Flattten listst; source: https://stackoverflow.com/questions/24829027/unimplemented-type-list-when-trying-to-write-table
 
-sf_x$zipcode <- out4
+sf_x$zip_code <- out4
 
 # Putting it back with the sf_data
 df_crime <- left_join(df_crime, sf_x, by = "CMPLNT_NUM")
