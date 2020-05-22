@@ -32,6 +32,13 @@ zip_codes_inhousing_incensus <- intersect(zip_codes_inhousing, zip_codes_incensu
 df_sale$zip_code <- as.character(df_sale$zip_code)
 df_sale_census <- merge(df_sale[df_sale$zip_code %in% zip_codes_inhousing_incensus, ], zip_population[zip_population$zip_code %in% zip_codes_inhousing_incensus, ], by = "zip_code")
 
+load(file = "Data_Score_by_year_and_zipcode.rda")
+#Adding the crime score data
+zip_codes_inhousing_incensus_incrime <- intersect(unique(df_sale_census$zip_code), unique(score_by_zip_and_year$zip_code))
+colnames(score_by_zip_and_year) <- c("zip_code", "crime_score_year", "sum_weight", "weight", "TotalPop")
+df_sale_census_crime <- merge(df_sale_census[df_sale_census$zip_code %in% zip_codes_inhousing_incensus_incrime, ], score_by_zip_and_year[score_by_zip_and_year$zip_code %in% zip_codes_inhousing_incensus_incrime, ], by = c("zip_code", "crime_score_year"))
+
+
 X <- df %>% select("land_square_feet")
 X <- as.numeric(X[[1]])
 y <- df %>% select("sale_price")
