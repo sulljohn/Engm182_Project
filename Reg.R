@@ -1,3 +1,4 @@
+#Start the code from line 
 # Load packages
 library(dplyr)
 library(RcppArmadillo)
@@ -42,6 +43,8 @@ df_sale_census_crime <- na.omit(df_sale_census_crime)
 save(df_sale_census_crime, file = "Data_sale_census_crime.rda")
 
 #Regress sale price with sale year, land area, gross area, tax class, building class, year built
+
+load(file = "Data_sale_census_crime.rda")
 fit1 <- lm(sale_price ~ sale_year + land_square_feet + gross_square_feet + year_built + tax_class_at_time_of_sale + building_class_at_time_of_sale, data = df_sale_census_crime)
 
 
