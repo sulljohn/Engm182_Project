@@ -12,7 +12,7 @@ library(shiny)
 library(leaflet)
 library(shinyWidgets)
 
-load("../grouped_housing.rda")
+load("../merged_housing_crime.rda")
 
 # Define UI for application that draws a histogram
 shinyUI(fluidPage(
@@ -22,18 +22,22 @@ shinyUI(fluidPage(
             sliderTextInput(
                 inputId = "date_select",
                 label="Month",
-                choices = sort(unique(grouped_data$month)),
+                choices = sort(unique(merged_housing_crime$month_char)),
                 animate=TRUE,
-                selected="2020-01"
+                selected="2003-01"
             ),
             radioButtons(
                 inputId = "data_select",
                 label = "Mapped Data",
-                choiceValues = colnames(grouped_housing)[-c(1:2)],
+                choiceValues = colnames(merged_housing_crime)[-c(1:2)],
                 choiceNames = c(
                     "Average price per sq. ft.",
                     "Number of sales",
-                    "Total proceeds from sales"
+                    "Total proceeds from sales",
+                    "Population",
+                    "Income per Capita",
+                    "Unemployment rate",
+                    "Crime score"
                 )
             )
         ),

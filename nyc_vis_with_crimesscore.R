@@ -43,7 +43,15 @@ new_crime_score = score_by_time_and_rating %>%
 
 
 merged_housing_crime <- merge(new_housing, new_crime_score, 
-                             c("month_char", "zip_code"), all = TRUE)
+                             c("month_char", "zip_code"), all = TRUE)%>%
+                    select(-c("month","weight", "weight_1000","sum_weight","Men", "Women", 
+                              "Hispanic", "White", "Black", "Native", "Asian"))
+
+save(merged_housing_crime, file = "merged_housing_crime.rda")
+
+dim(merged_housing_crime)
+
+
 
 
 head(new_housing)

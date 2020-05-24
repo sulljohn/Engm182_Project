@@ -15,7 +15,7 @@ library(sf)
 library(rmapshaper)
 
 
-load("../grouped_housing.rda")
+load("../merged_housing_crime.rda")
 
 zip_sf = st_read("../nyc_zip_code_tabulation_areas_polygons.geojson", stringsAsFactors = FALSE)
 zip_sf = rmapshaper::ms_simplify(zip_sf, keep_shapes=TRUE)
@@ -23,8 +23,8 @@ zip_sf = rmapshaper::ms_simplify(zip_sf, keep_shapes=TRUE)
 shinyServer(function(input, output) {
 
     df <- reactive({
-        data = grouped_housing %>%
-            filter(sale_month == input$date_select) %>%
+        data = merged_housing_crime %>%
+            filter(month_char == input$date_select) %>%
             select(zip_code, disp_data = !!input$data_select)
         tmp = merge(zip_sf, data, by.x="postalcode", by.y="zip_code", all.x=TRUE)
         return(tmp)
@@ -39,7 +39,7 @@ shinyServer(function(input, output) {
     
     pal = eventReactive(input$data_select, {colorNumeric(
         palette = "YlGnBu",
-        domain = pull(grouped_housing, !!input$data_select)
+        domain = pull(merged_housing_crime, !!input$data_select)
     )})
     
     observe({
@@ -62,10 +62,14 @@ shinyServer(function(input, output) {
     
     observeEvent(input$data_select, {
         tmp = df()
-        if (input$data_select == "avg_price_per_sqft") {
+        if (input$data_select %in% c("PerCapitaIncome", "avg_price_per_sqft")) {
             func = labelFormat(prefix = " $")
         } else if (input$data_select == "total_proceeds") {
             func = labelFormat(prefix = " $", suffix = "M", transform=function(x) x/1E6)
+        } else if (input$data_select == "Unemplyed") {
+            func = labelFormat(suffix = "%")
+            
+            
         } else {
             func = labelFormat(prefix = " ")
         }
@@ -73,7 +77,7 @@ shinyServer(function(input, output) {
             clearControls() %>%
             addLegend(
                 pal = pal(), 
-                values = ~pull(grouped_housing, !!input$data_select), 
+                values = ~pull(merged_housing_crime, !!input$data_select), 
                 position = "bottomright", 
                 title = input$data_select,
                 labFormat = func
