@@ -2,6 +2,7 @@
 # Load packages
 library(dplyr)
 library(RcppArmadillo)
+library(lubridate) 
 
 # Only sales prices > 0 for housing data
 
@@ -57,7 +58,7 @@ df_sale_census_crime <- df_sale_census_crime[zero_rows, ]
 x <- df_sale_census_crime %>% select("sale_year", "land_square_feet", "building_class_at_time_of_sale")
 x$sale_year <- as.numeric(x[[1]])
 x$land_square_feet <- as.numeric(x[[2]])
-x$building_class_at_time_of_sale <- as.factor(as.numeric(factor(x[[3]]))) # Source: https://stackoverflow.com/questions/3418128/how-to-convert-a-factor-to-integer-numeric-without-loss-of-information
+x$building_class_at_time_of_sale <- as.numeric(factor(x[[3]])) # Source: https://stackoverflow.com/questions/3418128/how-to-convert-a-factor-to-integer-numeric-without-loss-of-information
 y <- df_sale_census_crime %>% select("sale_price")
 y <- as.numeric(y[[1]])
 
