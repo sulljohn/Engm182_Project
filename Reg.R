@@ -45,6 +45,10 @@ save(df_sale_census_crime, file = "Data_sale_census_crime.rda")
 #Regress sale price with sale year, land area, gross area, tax class, building class, year built
 load(file = "Data_sale_census_crime.rda")
 
+#Remove values of 0
+zero_rows = apply(df_sale_census_crime, 1, function(row) all(row != 0))
+df_sale_census_crime <- df_sale_census_crime[zero_rows, ]
+
 # Run some regressions and see what variables help the most (does crime help?)
 # You may have to do this before running the regressions:
 # https://stackoverflow.com/questions/51295402/r-on-macos-error-vector-memory-exhausted-limit-reached
