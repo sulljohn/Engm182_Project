@@ -44,46 +44,22 @@ save(df_sale_census_crime, file = "Data_sale_census_crime.rda")
 
 #Regress sale price with sale year, land area, gross area, tax class, building class, year built
 load(file = "Data_sale_census_crime.rda")
-fit1 <- lm(sale_price ~ sale_year + land_square_feet + gross_square_feet + year_built + tax_class_at_time_of_sale + building_class_at_time_of_sale, data = df_sale_census_crime)
-
-
-
-
-
-
-
-
-#X <- df %>% select("land_square_feet")
-#X <- as.numeric(X[[1]])
-#y <- df %>% select("sale_price")
-#y <- as.numeric(y[[1]])
-
-# Trying it as a matrix, works better ...
-#X2 <- data.matrix(X)
-
-# Examine datatype for each column
-#sapply(X, class)
-#sapply(y, class)
-
-
-
-
-
 
 # Run some regressions and see what variables help the most (does crime help?)
 # You may have to do this before running the regressions:
 # https://stackoverflow.com/questions/51295402/r-on-macos-error-vector-memory-exhausted-limit-reached
 
-#fit <- fastLm(X2, y)
-#summary(fit)
+x <- df_sale_census_crime %>% select("sale_year", "land_square_feet", "building_class_at_time_of_sale")
+x$sale_year <- as.numeric(x[[1]])
+x$land_square_feet <- as.numeric(x[[2]])
+x$building_class_at_time_of_sale <- as.factor(as.numeric(factor(x[[3]]))) # Source: https://stackoverflow.com/questions/3418128/how-to-convert-a-factor-to-integer-numeric-without-loss-of-information
+y <- df_sale_census_crime %>% select("sale_price")
+y <- as.numeric(y[[1]])
 
-# Include in report table of findings for the different regressions and the p-values
+sapply(x, class)
+sapply(y, class)
 
+fit1 <- fastLm(x, y)
+summary(fit1)
 
-# Use regression results to make score for each area / zip code over time
-# (maybe based this score on the regression coefficients for the regions)
-
-
-
-# Plot these on the Shiny map that the othter pair is working on
-
+# TODO: run regressions using different x variables
