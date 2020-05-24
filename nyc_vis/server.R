@@ -5,7 +5,6 @@
 # Find out more about building applications with Shiny here:
 #
 #    http://shiny.rstudio.com/
-#
 
 library(tidyverse)
 library(shiny)
@@ -25,7 +24,7 @@ shinyServer(function(input, output) {
     df <- reactive({
         data = merged_housing_crime %>%
             filter(month_char == input$date_select) %>%
-            select(zip_code, disp_data = !!input$data_select)
+            select(zip_code, disp_data = !!input$data_select, TotalPop)
         tmp = merge(zip_sf, data, by.x="postalcode", by.y="zip_code", all.x=TRUE)
         return(tmp)
     })
@@ -55,7 +54,8 @@ shinyServer(function(input, output) {
                 weight = 1, 
                 smoothFactor = 0.2,
                 popup = ~paste0(
-                    "<b>", postalcode, "</b><br/>"
+                    "<b>", postalcode, "</b><br/>",
+                    TotalPop
                 )
             )
     })
