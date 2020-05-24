@@ -46,6 +46,7 @@ save(df_sale_census_crime, file = "Data_sale_census_crime.rda")
 load(file = "Data_sale_census_crime.rda")
 
 #Remove values of 0
+#source: https://stackoverflow.com/questions/9977686/how-to-remove-rows-with-any-zero-value
 zero_rows = apply(df_sale_census_crime, 1, function(row) all(row != 0))
 df_sale_census_crime <- df_sale_census_crime[zero_rows, ]
 
