@@ -55,15 +55,27 @@ df_sale_census_crime <- df_sale_census_crime[zero_rows, ]
 # You may have to do this before running the regressions:
 # https://stackoverflow.com/questions/51295402/r-on-macos-error-vector-memory-exhausted-limit-reached
 
-x <- df_sale_census_crime %>% select("sale_year", "land_square_feet", "building_class_at_time_of_sale")
+x <- df_sale_census_crime %>% select("land_square_feet", "PerCapitaIncome")
 x$sale_year <- as.numeric(x[[1]])
 x$land_square_feet <- as.numeric(x[[2]])
-x$building_class_at_time_of_sale <- as.numeric(factor(x[[3]])) # Source: https://stackoverflow.com/questions/3418128/how-to-convert-a-factor-to-integer-numeric-without-loss-of-information
+
+# Setting up factor variables
+building_class <- model.matrix( ~ building_class_at_time_of_sale - 1, data=df_sale_census_crime )
+
+# Binding factor variables
+x<-cbind(x, building_class)
+
+# Add intercept column and renaming
+x<-cbind(x, 1)
+colnames(x)[dim(x)[2]] <- "Intercept" # Source: https://www.dummies.com/programming/r/how-to-name-matrix-rows-and-columns-in-r/
+
+# Setup the y output variable
 y <- df_sale_census_crime %>% select("sale_price")
 y <- as.numeric(y[[1]])
 
-sapply(x, class)
-sapply(y, class)
+# Display the classes if you want
+# sapply(x, class)
+# sapply(y, class)
 
 fit1 <- fastLm(x, y)
 summary(fit1)
