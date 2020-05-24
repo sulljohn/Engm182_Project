@@ -66,7 +66,7 @@ shinyServer(function(input, output) {
             func = labelFormat(prefix = " $")
         } else if (input$data_select == "total_proceeds") {
             func = labelFormat(prefix = " $", suffix = "M", transform=function(x) x/1E6)
-        } else if (input$data_select == "Unemplyed") {
+        } else if (input$data_select == "Unemployed") {
             func = labelFormat(suffix = "%")
             
             
