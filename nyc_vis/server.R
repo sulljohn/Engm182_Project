@@ -24,7 +24,7 @@ shinyServer(function(input, output) {
     df <- reactive({
         data = merged_housing_crime %>%
             filter(month_char == input$date_select) %>%
-            select(zip_code, disp_data = !!input$data_select, TotalPop)
+            select(zip_code, disp_data = !!input$data_select)
         tmp = merge(zip_sf, data, by.x="postalcode", by.y="zip_code", all.x=TRUE)
         return(tmp)
     })
@@ -54,8 +54,7 @@ shinyServer(function(input, output) {
                 weight = 1, 
                 smoothFactor = 0.2,
                 popup = ~paste0(
-                    "<b>", postalcode, "</b><br/>",
-                    TotalPop
+                    "<b>", postalcode, "</b><br/>"
                 )
             )
     })
