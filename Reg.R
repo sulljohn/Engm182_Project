@@ -46,6 +46,10 @@ save(df_sale_census_crime, file = "Data_sale_census_crime.rda")
 #Regress sale price with sale year, land area, gross area, tax class, building class, year built
 load(file = "Data_sale_census_crime.rda")
 
+### RUNNING REGRESSIONS HERE
+
+summary(df_sale_census_crime)
+
 #Remove values of 0
 #source: https://stackoverflow.com/questions/9977686/how-to-remove-rows-with-any-zero-value
 zero_rows = apply(df_sale_census_crime, 1, function(row) all(row != 0))
@@ -55,15 +59,26 @@ df_sale_census_crime <- df_sale_census_crime[zero_rows, ]
 # You may have to do this before running the regressions:
 # https://stackoverflow.com/questions/51295402/r-on-macos-error-vector-memory-exhausted-limit-reached
 
-x <- df_sale_census_crime %>% select("land_square_feet", "PerCapitaIncome")
-x$sale_year <- as.numeric(x[[1]])
-x$land_square_feet <- as.numeric(x[[2]])
+x <- df_sale_census_crime %>% select("land_square_feet", "PerCapitaIncome", "Unemployed", "TotalPop.x", "Men", "Women")
+x$land_square_feet <- as.numeric(x[[1]])
+x$PerCapitaIncome <- as.numeric(x[[2]])
+x$Unemployed <- as.numeric(x[[3]])
+x$TotalPop.x <- as.numeric(x[[4]])
+x$Men <- as.numeric(x[[5]])
+x$Women <- as.numeric(x[[6]])
 
-# Setting up factor variables
+# Setting up factor variable
+df_sale_census_crime$sale_year <- as.character(df_sale_census_crime$sale_year)
+df_sale_census_crime$year_built <- as.character(df_sale_census_crime$year_built)
+
 building_class <- model.matrix( ~ building_class_at_time_of_sale - 1, data=df_sale_census_crime )
+sale_year <- model.matrix( ~ sale_year - 1, data=df_sale_census_crime )
+year_built <- model.matrix( ~ year_built - 1, data=df_sale_census_crime )
 
 # Binding factor variables
 x<-cbind(x, building_class)
+x<-cbind(x, sale_year)
+x<-cbind(x, year_built)
 
 # Add intercept column and renaming
 x<-cbind(x, 1)
