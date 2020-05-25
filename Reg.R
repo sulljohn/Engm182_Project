@@ -78,7 +78,6 @@ x$Women <- as.numeric(x[[6]])
 # Setting up factor variable
 df_sale_census_crime$sale_year <- as.character(df_sale_census_crime$sale_year)
 df_sale_census_crime$year_built <- as.character(df_sale_census_crime$year_built)
->>>>>>> 9dfa4d9c041f8337d0951e29945371ccaf5b7881
 
 building_class <- model.matrix( ~ building_class_at_time_of_sale - 1, data=df_sale_census_crime )
 sale_year <- model.matrix( ~ sale_year - 1, data=df_sale_census_crime )
@@ -130,10 +129,10 @@ rms_error <- rms/mean(results$y_test)
 
 #Regression 2
 x2 <- df_sale_census_crime %>% select("land_square_feet", "gross_square_feet", "PerCapitaIncome", "Unemployed")
-x2$land_square_feet <- as.numeric(x[[1]])
-x2$gross_square_feet <- as.numeric(x[[2]])
-x2$PerCapitaIncome <- as.numeric(x[[3]])
-x2$Unemployed <- as.numeric(x[[4]])
+x2$land_square_feet <- as.numeric(x2[[1]])
+x2$gross_square_feet <- as.numeric(x2[[2]])
+x2$PerCapitaIncome <- as.numeric(x2[[3]])
+x2$Unemployed <- as.numeric(x2[[4]])
 
 #Setting up factor variable for tax class
 df_sale_census_crime$tax_class_at_time_of_sale <- as.character(df_sale_census_crime$tax_class_at_time_of_sale)
@@ -149,6 +148,7 @@ x2<-cbind(x2, tax_class)
 x2<-cbind(x2, 1)
 colnames(x2)[dim(x2)[2]] <- "Intercept" # Source: https://www.dummies.com/programming/r/how-to-name-matrix-rows-and-columns-in-r/
 
+#x2 <- x2[!is.na(df$sale_price), ]
 # ----- Split data into training and validation sets ----- 
 # create a list of 80% of the rows in the original dataset we can use for training
 validation_index <- sort(sample(nrow(x2), nrow(x2)*.8))
@@ -160,14 +160,14 @@ y2_train <- y[validation_index]
 # Run regression
 fit2 <- fastLm(x_train, y2_train)
 summary(fit2)
-#R-squared value is 13.67%
+#R-squared value is 14.19%
 
 # Perform predictions on test set
-reg_pred2 <- predict(fit2, as.matrix(x_test))
+reg_pred2 <- predict(fit2, as.matrix(x2_test))
 
 # See the comparison
-results <- data.frame(cbind(y_test, reg_pred1))
-results$diff <- results$reg_pred1 - results$y_test
+results2 <- data.frame(cbind(y2_test, reg_pred2))
+results2$diff <- results2$reg_pred2 - results2$y_test
 results$diff_squared <- '^' (results$diff, 2)
 rms <- sqrt(mean(results$diff_squared))
 rms_error <- rms/mean(results$y_test)
