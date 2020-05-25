@@ -88,11 +88,29 @@ colnames(x)[dim(x)[2]] <- "Intercept" # Source: https://www.dummies.com/programm
 y <- df_sale_census_crime %>% select("sale_price")
 y <- as.numeric(y[[1]])
 
+# ----- Split data into training and validation sets ----- 
+# create a list of 80% of the rows in the original dataset we can use for training
+validation_index <- sort(sample(nrow(x), nrow(x)*.8))
+# select 20% of the data for validation
+x_test <- x[-validation_index,]
+y_test <- y[-validation_index]
+# use the remaining 80% of data to training and testing the models
+x_train <- x[validation_index,]
+y_train <- y[validation_index]
+
 # Display the classes if you want
 # sapply(x, class)
 # sapply(y, class)
 
-fit1 <- fastLm(x, y)
+# Run regression
+fit1 <- fastLm(x_train, y_train)
 summary(fit1)
+
+# Perform predictions on test set
+reg_pred1 <- predict(fit1, as.matrix(x_test))
+
+# See the comparison
+results <- data.frame(cbind(y_test, reg_pred1))
+results$diff <- results$reg_pred1 - results$y_test
 
 # TODO: run regressions using different x variables
