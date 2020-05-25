@@ -55,6 +55,12 @@ summary(df_sale_census_crime)
 zero_rows = apply(df_sale_census_crime, 1, function(row) all(row != 0))
 df_sale_census_crime <- df_sale_census_crime[zero_rows, ]
 
+# Remove large house sale prices; source: https://stackoverflow.com/questions/25764810/delete-rows-based-on-range-of-values-in-column
+# TODO: maybe dodn't need this? maybe put in other ranges?
+df_sale_census_crime$sale_price <- as.numeric(df_sale_census_crime$sale_price)
+df_sale_census_crime <- df_sale_census_crime[with(df_sale_census_crime, sale_price <= 1000000), ]
+
+
 # Run some regressions and see what variables help the most (does crime help?)
 # You may have to do this before running the regressions:
 # https://stackoverflow.com/questions/51295402/r-on-macos-error-vector-memory-exhausted-limit-reached
@@ -114,3 +120,4 @@ results <- data.frame(cbind(y_test, reg_pred1))
 results$diff <- results$reg_pred1 - results$y_test
 
 # TODO: run regressions using different x variables
+
