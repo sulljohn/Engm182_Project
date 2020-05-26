@@ -29,17 +29,20 @@ shinyUI(fluidPage(
             radioButtons(
                 inputId = "data_select",
                 label = "Mapped Data",
-                choiceValues = colnames(merged_housing_crime)[-c(1:2)],
+                choiceValues = colnames(merged_housing_crime)[-c(1:2, 6:8)],
                 choiceNames = c(
                     "Average price per sq. ft.",
                     "Number of sales",
                     "Total proceeds from sales",
-                    "Population",
-                    "Income per Capita",
-                    "Unemployment rate",
                     "Crime score"
                 )
-            )
+            ),
+            numericInput("year", "Enter year built", 2000, min =1950, max = 2020),
+            numericInput("area", "Enter area of property", 1000, min =0, max = 10000),
+            textOutput("crimescore"),
+            textOutput("price")
+            
+            
         ),
         mainPanel(
             leafletOutput(
