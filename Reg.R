@@ -65,7 +65,7 @@ df_sale_census_crime <- df_sale_census_crime[with(df_sale_census_crime, sale_pri
 # You may have to do this before running the regressions:
 # https://stackoverflow.com/questions/51295402/r-on-macos-error-vector-memory-exhausted-limit-reached
 
-<<<<<<< HEAD
+
 #Regression 1
 x <- df_sale_census_crime %>% select("land_square_feet", "PerCapitaIncome", "Unemployed", "TotalPop.x", "Men", "Women")
 x$land_square_feet <- as.numeric(x[[1]])
@@ -160,7 +160,7 @@ y2_train <- y[validation_index]
 # Run regression
 fit2 <- fastLm(x_train, y2_train)
 summary(fit2)
-#R-squared value is 14.19%
+#R-squared value is 15.7%
 
 # Perform predictions on test set
 reg_pred2 <- predict(fit2, as.matrix(x2_test))
