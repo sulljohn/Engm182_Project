@@ -12,9 +12,8 @@ library(leaflet)
 library(jsonlite)
 library(sf)
 library(rmapshaper)
+library(RColorBrewer)
 
-
-load("../merged_housing_crime.rda")
 
 load("../zip_polygons.rda")
 zip_sf = rmapshaper::ms_simplify(zip_sf, keep_shapes=TRUE)
@@ -37,7 +36,7 @@ shinyServer(function(input, output) {
     
     
     pal = eventReactive(input$data_select, {colorNumeric(
-        palette = "YlGnBu",
+        palette = rev(brewer.pal(n=9, name = "RdYlGn")),
         domain = pull(merged_housing_crime, !!input$data_select)
     )})
     
@@ -53,12 +52,17 @@ shinyServer(function(input, output) {
                 fillOpacity = 0.7, 
                 weight = 1, 
                 smoothFactor = 0.2,
+                # Highlight neighbourhoods upon mouseover
+                highlight = highlightOptions(
+                    weight = 3,
+                    color = "black",
+                    opacity = 1.0
+                ),
                 popup = ~paste0(
                     "<b>", postalcode, "</b><br/>",
                     "Per capita income in 2015:    $", round(PerCapitaIncome),"</b><br/>",
                     "Total Population in 2015: ", TotalPop, "</b><br/>",
                     "Unemployment rate in 2015: ", round(Unemployed), "%"
-                 
                 )
             )
     })
@@ -75,10 +79,10 @@ shinyServer(function(input, output) {
         leafletProxy("map", data = tmp) %>%
             clearControls() %>%
             addLegend(
+                title=names(which(radioButtonOptions == input$data_select)),
                 pal = pal(), 
                 values = ~pull(merged_housing_crime, !!input$data_select), 
                 position = "bottomright", 
-                title = input$data_select,
                 labFormat = func
             )
     })
