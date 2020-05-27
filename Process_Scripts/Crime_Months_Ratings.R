@@ -1,27 +1,5 @@
-# Setting working directory to the current directory
-# Source: https://stackoverflow.com/questions/13672720/r-command-for-setting-working-directory-to-source-file-location-in-rstudio
-setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
-
-# Run separate processing scripts ...
-
-# 1. Import df_crime and nyc_tracts [BOTH should be fresh versions (just after import_all run)]
-load(file = "Data_Crime.rda")
-load(file = "Data_NYC_Tracts.rda")
-
-# 2. Crime_Rating
-source("Process_Scripts/Crime_Rating.R", echo = TRUE)
-
-# 3. Census_Coords_to_Zipcode
-source("Process_Scripts/Census_Coords_to_Zipcode.R", echo = TRUE)
-
-# 4. Crime_Coords_to_Zipcode
-source("Process_Scripts/Crime_Coords_to_Zipcode.R", echo = TRUE)
-
-
 ### Parsing the month and rating data
 
-# * The data needs to be reloaded in this way or some weird errors occur
-# Restart R if you get any errors wih this last part and just run this code
 library(lubridate)
 library(dplyr)
 #remove(list = ls())
