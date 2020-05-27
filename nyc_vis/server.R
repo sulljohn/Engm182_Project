@@ -24,7 +24,7 @@ shinyServer(function(input, output) {
     df <- reactive({
         data = merged_housing_crime %>%
             filter(month_char == input$date_select) %>%
-            select(zip_code, disp_data = !!input$data_select)
+            select(zip_code, disp_data = !!input$data_select, PerCapitaIncome, TotalPop, Unemployed)
         tmp = merge(zip_sf, data, by.x="postalcode", by.y="zip_code", all.x=TRUE)
         return(tmp)
     })
@@ -54,20 +54,21 @@ shinyServer(function(input, output) {
                 weight = 1, 
                 smoothFactor = 0.2,
                 popup = ~paste0(
-                    "<b>", postalcode, "</b><br/>"
+                    "<b>", postalcode, "</b><br/>",
+                    "Per capita income in 2015:    $", round(PerCapitaIncome),"</b><br/>",
+                    "Total Population in 2015: ", TotalPop, "</b><br/>",
+                    "Unemployment rate in 2015: ", round(Unemployed), "%"
+                 
                 )
             )
     })
     
     observeEvent(input$data_select, {
         tmp = df()
-        if (input$data_select %in% c("PerCapitaIncome", "avg_price_per_sqft")) {
+        if (input$data_select == "avg_price_per_sqft") {
             func = labelFormat(prefix = " $")
         } else if (input$data_select == "total_proceeds") {
             func = labelFormat(prefix = " $", suffix = "M", transform=function(x) x/1E6)
-        } else if (input$data_select == "Unemployed") {
-            func = labelFormat(suffix = "%")
-            
             
         } else {
             func = labelFormat(prefix = " ")

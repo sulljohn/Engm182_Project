@@ -53,32 +53,32 @@ dim(merged_housing_crime)
 
 
 
-
-head(new_housing)
-head(score_by_time_and_rating)
-
-
-class(score_by_time_and_rating$month)
-class(new_housing$month)
-
-score_by_time_and_rating$month1 = as.Date(score_by_time_and_rating$month, format = "%Y-%d-%m")
-
-head(score_by_time_and_rating$month)
-
-class(new_housing$month)
-
-
-
-# df$ddate <- format(as.Date(df$ddate), "%d/%m/%Y")
-
-# as.Date(strDates, "%m/%d/%Y")
-
- )
 # 
-# # merge(observations, animals, c("size","type"))
+# head(new_housing)
+# head(score_by_time_and_rating)
 # 
-# summary(merged_housing_crime)
-
+# 
+# class(score_by_time_and_rating$month)
+# class(new_housing$month)
+# 
+# score_by_time_and_rating$month1 = as.Date(score_by_time_and_rating$month, format = "%Y-%d-%m")
+# 
+# head(score_by_time_and_rating$month)
+# 
+# class(new_housing$month)
+# 
+# 
+# 
+# # df$ddate <- format(as.Date(df$ddate), "%d/%m/%Y")
+# 
+# # as.Date(strDates, "%m/%d/%Y")
+# 
+#  )
+# # 
+# # # merge(observations, animals, c("size","type"))
+# # 
+# # summary(merged_housing_crime)
+# 
 
 
 
