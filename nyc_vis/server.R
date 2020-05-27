@@ -16,7 +16,7 @@ library(rmapshaper)
 
 load("../merged_housing_crime.rda")
 
-zip_sf = st_read("../nyc_zip_code_tabulation_areas_polygons.geojson", stringsAsFactors = FALSE)
+load("../zip_polygons.rda")
 zip_sf = rmapshaper::ms_simplify(zip_sf, keep_shapes=TRUE)
 
 shinyServer(function(input, output) {
@@ -24,7 +24,7 @@ shinyServer(function(input, output) {
     df <- reactive({
         data = merged_housing_crime %>%
             filter(month_char == input$date_select) %>%
-            select(zip_code, disp_data = !!input$data_select, PerCapitaIncome, TotalPop, Unemployed)
+            select(zip_code, disp_data = !!input$data_select)
         tmp = merge(zip_sf, data, by.x="postalcode", by.y="zip_code", all.x=TRUE)
         return(tmp)
     })
@@ -69,7 +69,6 @@ shinyServer(function(input, output) {
             func = labelFormat(prefix = " $")
         } else if (input$data_select == "total_proceeds") {
             func = labelFormat(prefix = " $", suffix = "M", transform=function(x) x/1E6)
-            
         } else {
             func = labelFormat(prefix = " ")
         }

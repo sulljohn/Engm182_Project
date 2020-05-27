@@ -29,7 +29,7 @@ shinyUI(fluidPage(
             radioButtons(
                 inputId = "data_select",
                 label = "Mapped Data",
-                choiceValues = colnames(merged_housing_crime)[-c(1:2, 6:8)],
+                choiceValues = colnames(merged_housing_crime)[-c(1:2)],
                 choiceNames = c(
                     "Average price per sq. ft.",
                     "Number of sales",
