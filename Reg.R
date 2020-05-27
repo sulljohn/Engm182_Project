@@ -8,10 +8,11 @@ load(file = "Data_sale_census_crime.rda")
 
 summary(df_sale_census_crime)
 
-# Remove large house sale prices before regressions; source: https://stackoverflow.com/questions/25764810/delete-rows-based-on-range-of-values-in-column
-# TODO: maybe dodn't need this? maybe put in other ranges?
-# df_sale_census_crime$sale_price <- as.numeric(df_sale_census_crime$sale_price)
-# df_sale_census_crime <- df_sale_census_crime[with(df_sale_census_crime, sale_price <= 1000000), ]
+# Make sure sale prices are numeric
+df_sale_census_crime$sale_price <- as.numeric(df_sale_census_crime$sale_price)
+
+# Remove large house sale prices; source: https://stackoverflow.com/questions/25764810/delete-rows-based-on-range-of-values-in-column
+df_sale_census_crime <- df_sale_census_crime[with(df_sale_census_crime, sale_price <= 5000000), ]
 
 # Run some regressions and see what variables help the most (does crime help?)
 # You may have to do this before running the regressions:
