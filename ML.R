@@ -55,7 +55,8 @@ df_sale_census_crime$sale_price <- as.numeric(df_sale_census_crime$sale_price)
 
 #For now just using 1% of the data
 setup_stage <- sort(sample(nrow(df_sale_census_crime), nrow(df_sale_census_crime)*.01))
-df_sale_census_crime <- df_sale_census_crime[setup_stage]
+setup_stage2 <- sort(sample(nrow(df_sale_census_crime), nrow(df_sale_census_crime)))
+df_sale_census_crime <- df_sale_census_crime[setup_stage] #Use either setup_stage or setup_stage2 accordingly
 #Doing this here as when done after splitting, number of values in x and y become different
 df_sale_census_crime$gross_square_feet <- as.numeric(df_sale_census_crime$gross_square_feet)
 sapply(df_sale_census_crime, class)
@@ -192,7 +193,9 @@ RMSE_knn <- sqrt(mean('^'(results3$diff_knn,2))) #641,702
 #Calculating %error (RMSE/Average price)
 error_nnet <- RMSE_nnet/mean(results3$sale_price) 
 error_dnn <- RMSE_dnn/mean(results3$sale_price) 
-mean(results3$sale_price)
+error_rf <- RMSE_rf/mean(results3$sale_price) 
+error_bgcrt <- RMSE_bgcrt/mean(results3$sale_price) 
+error_knn <- RMSE_knn/mean(results3$sale_price) 
 
 #Saving random forest model
 save(fit.rf, file = "random_forest.rda")
