@@ -18,10 +18,8 @@ df_sale_census_crime <- df_sale_census_crime[with(df_sale_census_crime, sale_pri
 # You may have to do this before running the regressions:
 # https://stackoverflow.com/questions/51295402/r-on-macos-error-vector-memory-exhausted-limit-reached
 
-<<<<<<< HEAD
+HEAD
 
-=======
->>>>>>> 52db90cd1c615799fb3f5fe6c51a2eae605c19a0
 #Regression 1
 x <- df_sale_census_crime %>% select("land_square_feet", "PerCapitaIncome", "Unemployed", "TotalPop.x", "Men", "Women")
 x$land_square_feet <- as.numeric(x[[1]])
