@@ -153,17 +153,6 @@ summary(results)
 # compare RMSE of models
 dotplot(results)
 
-# summarize accuracy of models
-results2 <- resamples(list(fit.nnet, dnn=fit.dnn, fit.rf))
-summary(results2)
-#nnet mean RMSE = 525659.6
-#dnn mean RMSE = 410711.8
-#rf mean RMSE = 405804.9
-#bagged cart mean RMSE = 437638.0
-#knn mean RMSE = 444834.5
-# compare accuracy of models
-dotplot(results2)
-
 # Summarize the BEST Model
 print(fit.rf)
 
@@ -190,12 +179,28 @@ RMSE_rf <- sqrt(mean('^'(results3$diff_rf,2))) #689,789
 RMSE_bgcrt <- sqrt(mean('^'(results3$diff_bgcrt,2))) #634,809
 RMSE_knn <- sqrt(mean('^'(results3$diff_knn,2))) #641,702
 
+#Calculating MAE
+MAE_nnet <- mean(results3$diff_nnet) #401,590
+MAE_dnn <- mean(results3$diff_dnn) #466,828
+MAE_rf <- mean(results3$diff_rf) #462,907
+MAE_bgcrt <- mean(results3$diff_bgcrt) #401,397
+MAE_knn <- mean(results3$diff_knn) #363,609
+
+mean(results3$sale_price)
+
 #Calculating %error (RMSE/Average price)
 error_nnet <- RMSE_nnet/mean(results3$sale_price) 
 error_dnn <- RMSE_dnn/mean(results3$sale_price) 
 error_rf <- RMSE_rf/mean(results3$sale_price) 
 error_bgcrt <- RMSE_bgcrt/mean(results3$sale_price) 
 error_knn <- RMSE_knn/mean(results3$sale_price) 
+
+#Calculating %error (MAE/Average price)
+error2_nnet <- MAE_nnet/mean(results3$sale_price) 
+error2_dnn <- MAE_dnn/mean(results3$sale_price) 
+error2_rf <- MAE_rf/mean(results3$sale_price) 
+error2_bgcrt <- MAE_bgcrt/mean(results3$sale_price) 
+error2_knn <- MAE_knn/mean(results3$sale_price) 
 
 #Saving random forest model
 save(fit.rf, file = "random_forest.rda")
