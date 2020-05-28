@@ -12,10 +12,9 @@ library(shiny)
 library(leaflet)
 library(shinyWidgets)
 
-load("../merged_housing_crime.rda")
-
 # Define UI for application that draws a histogram
 shinyUI(fluidPage(
+    HTML(html_fix),
     titlePanel("NYC Housing and Crime"),
     sidebarLayout(
         sidebarPanel(
@@ -29,13 +28,7 @@ shinyUI(fluidPage(
             radioButtons(
                 inputId = "data_select",
                 label = "Mapped Data",
-                choiceValues = colnames(merged_housing_crime)[-c(1:2, 6:8)],
-                choiceNames = c(
-                    "Average price per sq. ft.",
-                    "Number of sales",
-                    "Total proceeds from sales",
-                    "Crime score"
-                )
+                radioButtonOptions # set up in global.R
             ),
             numericInput("year", "Enter year built", 2000, min =1950, max = 2020),
             numericInput("area", "Enter area of property", 1000, min =0, max = 10000),

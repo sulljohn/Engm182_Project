@@ -12,11 +12,10 @@ library(leaflet)
 library(jsonlite)
 library(sf)
 library(rmapshaper)
+library(RColorBrewer)
 
 
-load("../merged_housing_crime.rda")
-
-zip_sf = st_read("../nyc_zip_code_tabulation_areas_polygons.geojson", stringsAsFactors = FALSE)
+load("../zip_polygons.rda")
 zip_sf = rmapshaper::ms_simplify(zip_sf, keep_shapes=TRUE)
 
 shinyServer(function(input, output) {
@@ -24,7 +23,7 @@ shinyServer(function(input, output) {
     df <- reactive({
         data = merged_housing_crime %>%
             filter(month_char == input$date_select) %>%
-            select(zip_code, disp_data = !!input$data_select, PerCapitaIncome, TotalPop, Unemployed)
+            select(zip_code, disp_data = !!input$data_select)
         tmp = merge(zip_sf, data, by.x="postalcode", by.y="zip_code", all.x=TRUE)
         return(tmp)
     })
@@ -37,7 +36,7 @@ shinyServer(function(input, output) {
     
     
     pal = eventReactive(input$data_select, {colorNumeric(
-        palette = "YlGnBu",
+        palette = rev(brewer.pal(n=9, name = "RdYlGn")),
         domain = pull(merged_housing_crime, !!input$data_select)
     )})
     
@@ -53,12 +52,17 @@ shinyServer(function(input, output) {
                 fillOpacity = 0.7, 
                 weight = 1, 
                 smoothFactor = 0.2,
+                # Highlight neighbourhoods upon mouseover
+                highlight = highlightOptions(
+                    weight = 3,
+                    color = "black",
+                    opacity = 1.0
+                ),
                 popup = ~paste0(
                     "<b>", postalcode, "</b><br/>",
                     "Per capita income in 2015:    $", round(PerCapitaIncome),"</b><br/>",
                     "Total Population in 2015: ", TotalPop, "</b><br/>",
                     "Unemployment rate in 2015: ", round(Unemployed), "%"
-                 
                 )
             )
     })
@@ -69,17 +73,16 @@ shinyServer(function(input, output) {
             func = labelFormat(prefix = " $")
         } else if (input$data_select == "total_proceeds") {
             func = labelFormat(prefix = " $", suffix = "M", transform=function(x) x/1E6)
-            
         } else {
             func = labelFormat(prefix = " ")
         }
         leafletProxy("map", data = tmp) %>%
             clearControls() %>%
             addLegend(
+                title=names(which(radioButtonOptions == input$data_select)),
                 pal = pal(), 
                 values = ~pull(merged_housing_crime, !!input$data_select), 
                 position = "bottomright", 
-                title = input$data_select,
                 labFormat = func
             )
     })
