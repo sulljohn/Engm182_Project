@@ -194,7 +194,8 @@ error_nnet <- RMSE_nnet/mean(results3$sale_price)
 error_dnn <- RMSE_dnn/mean(results3$sale_price) 
 mean(results3$sale_price)
 
-
+#Saving random forest model
+save(fit.rf, file = "random_forest.rda")
 
 
 
