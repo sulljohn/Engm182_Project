@@ -59,7 +59,7 @@ shinyServer(function(input, output) {
                     opacity = 1.0
                 ),
                 popup = ~paste0(
-                    "<b>", postalcode, "</b><br/>",
+                    "<b>", neighborhood, " - ", postalcode, "</b><br/>",
                     "Per capita income in 2015:    $", round(PerCapitaIncome),"</b><br/>",
                     "Total Population in 2015: ", TotalPop, "</b><br/>",
                     "Unemployment rate in 2015: ", round(Unemployed), "%"
