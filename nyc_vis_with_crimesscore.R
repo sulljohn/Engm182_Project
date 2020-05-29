@@ -40,8 +40,15 @@ unique_census = score_by_time_and_rating %>%
     group_by(zip_code) %>%
     summarize(PerCapitaIncome = PerCapitaIncome[1], Unemployed = Unemployed[1], TotalPop = TotalPop[1])
     
+
+neighborhoods = read_csv("neighborhoods.csv") %>%
+    mutate(zips = sapply(zips, function(x) as.list(strsplit(x," ")))) %>%
+    unnest(zips) %>%
+    add_row(zips = "00083", neighborhood = "Central Park")
+
 zip_sf = st_read("nyc_zip_code_tabulation_areas_polygons.geojson", stringsAsFactors = FALSE)
 zip_sf = merge(zip_sf, unique_census, by.x="postalcode", by.y="zip_code", all.x=TRUE)
+zip_sf = merge(zip_sf, neighborhoods, by.x="postalcode", by.y="zips", all.x=TRUE)
 save(zip_sf, file="zip_polygons.rda")
 
 new_crime_score = score_by_time_and_rating %>%
