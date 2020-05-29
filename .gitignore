@@ -3,7 +3,6 @@
 .Rhistory
 .RData
 .Ruserdata
-
 # These were added later to keep temporary files out
 *.rda
 *.RData
@@ -11,3 +10,7 @@ bin/
 .ipynb_checkpoints/
 *~*
 .DS_Store
+DA Project mapping.R
+app_original file.R
+server.R
+Reg.R

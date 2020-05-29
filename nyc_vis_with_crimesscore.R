@@ -1,4 +1,13 @@
 library(dplyr)
+library(tidyverse)
+library(shiny)
+library(leaflet)
+library(jsonlite)
+library(sf)
+library(rmapshaper)
+library(RColorBrewer)
+# install.packages("leafpop")
+library(leafpop)
 
 load(file = "Data_Score_by_Time_and_Rating.rda")
 

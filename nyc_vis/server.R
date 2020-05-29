@@ -13,7 +13,7 @@ library(jsonlite)
 library(sf)
 library(rmapshaper)
 library(RColorBrewer)
-
+library(leafpop)
 
 load("../zip_polygons.rda")
 zip_sf = rmapshaper::ms_simplify(zip_sf, keep_shapes=TRUE)
@@ -43,6 +43,15 @@ shinyServer(function(input, output) {
     observe({
         
         tmp = df()
+        # pnt = st_as_sf(data.frame(x = 174.764474, y = -36.877245),
+        #                coords = c("x", "y"),
+        #                crs = 4326)
+        # 
+        # p2 = levelplot(t(volcano), col.regions = terrain.colors(100))
+        # ggplot(filtered_merged, aes(x = month_char, y = total_proceeds, group = 1))+ geom_line()+scale_x_continuous()
+        filtered_merged  = merged_housing_crime %>%
+            filter(zip_code == 11367)
+        p2 =ggplot(filtered_merged , aes(x = month_char, y = ))
         
         leafletProxy("map", data = tmp) %>%
             clearShapes() %>%
@@ -64,7 +73,11 @@ shinyServer(function(input, output) {
                     "Total Population in 2015: ", TotalPop, "</b><br/>",
                     "Unemployment rate in 2015: ", round(Unemployed), "%"
                 )
-            )
+                
+            ) %>%
+        
+        # popupmap<- ggplot(tmp, aes(x = month_char, y = weight_normalized))+geom_point(),
+        addPopupGraphs()
     })
     
     observeEvent(input$data_select, {
