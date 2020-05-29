@@ -58,3 +58,4 @@ cleaned_df_housing = geocoded_df_housing %>%
   mutate(zip_code = sapply(zip_code, as.character))
 
 save(cleaned_df_housing, file="cleaned_housing.rda")
+
