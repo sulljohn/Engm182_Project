@@ -45,15 +45,6 @@ shinyServer(function(input, output) {
             setView(-74.0060,40.7128, zoom=11)
     })
     
-    
-    # pal = reactive({
-    #     tmp = df()
-    #     return(colorNumeric(
-    #         palette = rev(brewer.pal(n=9, name = "RdYlGn")),
-    #         domain = tmp$disp_data
-    #     ))
-    # })
-    
     observe({
         
         
@@ -149,24 +140,5 @@ shinyServer(function(input, output) {
             )
     }
     
-#     observeEvent(input$data_select, {
-#         tmp = df()
-#         if (input$data_select == "avg_price_per_sqft") {
-#             func = labelFormat(prefix = " $")
-#         } else if (input$data_select == "total_proceeds") {
-#             func = labelFormat(prefix = " $", suffix = "M", transform=function(x) x/1E6)
-#         } else {
-#             func = labelFormat(prefix = " ")
-#         }
-#         leafletProxy("map", data = tmp) %>%
-#             clearControls() %>%
-#             addLegend(
-#                 title=names(which(radioButtonOptions == input$data_select)),
-#                 pal = pal(), 
-#                 values = ~pull(merged_housing_crime, !!input$data_select), 
-#                 position = "bottomright", 
-#                 labFormat = func
-#             )
-#     })
 })
 

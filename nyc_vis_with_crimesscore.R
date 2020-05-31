@@ -25,11 +25,20 @@ summary(score_by_time_and_rating$weight_1000)
 
 score_by_time_and_rating$weight_log = -1*log((score_by_time_and_rating$weight), 10)
 
+# Remove NAs and outliers
 score_by_time_and_rating = score_by_time_and_rating %>%
-    filter(!is.na(weight_log))
+    filter(!is.na(weight_log)) %>%
+    filter(month > "2006-12-31") %>% # Data reported differntly before 2007 it seems
+    filter(!(zip_code == "11430" & month < "2009-01-01")) %>% # Very unusally high scores in this code before this time
+    filter(zip_code != "11251") %>% # Super highly variable variable scores in this code
+    # filter(!(zip_code == "11251" & month == "2008-09-01")) %>%
+    filter(!(zip_code == "10307" & (month > "2007-07-01" & month  < "2007-10-01"))) # Spike at this time in this code
     
-score_by_time_and_rating$weight_normalized = max(score_by_time_and_rating$weight_log) - score_by_time_and_rating$weight_log
-score_by_time_and_rating$weight_normalized = score_by_time_and_rating$weight_normalized/max(score_by_time_and_rating$weight_normalized)
+
+score_by_time_and_rating$weight_normalized = score_by_time_and_rating$weight/max(score_by_time_and_rating$weight)
+
+# score_by_time_and_rating$weight_normalized = max(score_by_time_and_rating$weight_log) - score_by_time_and_rating$weight_log
+# score_by_time_and_rating$weight_normalized = score_by_time_and_rating$weight_normalized/max(score_by_time_and_rating$weight_normalized)
 
 new_housing <- grouped_housing %>% 
     rename(
