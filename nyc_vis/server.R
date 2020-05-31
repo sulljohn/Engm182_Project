@@ -21,6 +21,15 @@ folder <- tempfile()
 dir.create(folder)
 
 shinyServer(function(input, output) {
+    
+   
+    output$crimescore<- renderText({
+        (input$year+input$area)/1000
+    })
+    
+    output$price <- renderText({
+        input$year-input$area
+    })
 
     df <- reactive({
         data = merged_housing_crime %>%
@@ -46,8 +55,6 @@ shinyServer(function(input, output) {
         
         
         tmp = df()
-
-        
         leafletProxy("map", data = tmp) %>%
             clearShapes() %>%
             clearPopups() %>%
