@@ -46,20 +46,44 @@ shinyServer(function(input, output) {
     })
     
     
-    pal = eventReactive(input$data_select, {colorNumeric(
-        palette = rev(brewer.pal(n=9, name = "RdYlGn")),
-        domain = pull(merged_housing_crime, !!input$data_select)
-    )})
+    # pal = reactive({
+    #     tmp = df()
+    #     return(colorNumeric(
+    #         palette = rev(brewer.pal(n=9, name = "RdYlGn")),
+    #         domain = tmp$disp_data
+    #     ))
+    # })
     
     observe({
         
         
         tmp = df()
+        
+        legend_labels = NULL
+        
+        pal = colorNumeric(
+            palette = rev(brewer.pal(n=9, name = "RdYlGn")),
+            domain = NULL
+        )
+        
+        if (all(is.na(tmp$disp_data))) {
+            func = labelFormat()
+            tmp$disp_data = as.factor(rep("NA", nrow(tmp)))
+            pal = colorFactor(palette = "#808080", domain = NULL)
+        } else if (input$data_select == "avg_price_per_sqft") {
+            func = labelFormat(prefix = " $")
+        } else if (input$data_select == "total_proceeds") {
+            func = labelFormat(prefix = " $", suffix = "M", transform=function(x) x/1E6)
+        } else {
+            func = labelFormat(prefix = " ")
+        }
+        
         leafletProxy("map", data = tmp) %>%
+            clearControls() %>%
             clearShapes() %>%
             clearPopups() %>%
             addPolygons(
-                fillColor = ~pal()(disp_data),
+                fillColor = ~pal(disp_data),
                 color = "#b2aeae", # you need to use hex colors
                 fillOpacity = 0.7, 
                 weight = 1, 
@@ -71,7 +95,15 @@ shinyServer(function(input, output) {
                     opacity = 1.0
                 ),
                 layerId = ~postalcode
-            ) 
+            ) %>%
+            addLegend(
+                title=names(which(radioButtonOptions == input$data_select)),
+                pal = pal, 
+                values = ~disp_data, 
+                position = "bottomright", 
+                labFormat = func,
+                labels = legend_labels
+            )
     })
     
     
@@ -90,7 +122,6 @@ shinyServer(function(input, output) {
         # Get plot object and other popup data for the chosen zip code
         plot_type_str = paste(plot_type, "_plot", sep="")
         zip_data = zip_sf[which(zip_sf$postalcode == id),]
-        cat(zip_data$neighborhood)
         plot = pull(zip_data, !!plot_type_str)
         
         # Write svg file to temporary folder
@@ -118,24 +149,24 @@ shinyServer(function(input, output) {
             )
     }
     
-    observeEvent(input$data_select, {
-        tmp = df()
-        if (input$data_select == "avg_price_per_sqft") {
-            func = labelFormat(prefix = " $")
-        } else if (input$data_select == "total_proceeds") {
-            func = labelFormat(prefix = " $", suffix = "M", transform=function(x) x/1E6)
-        } else {
-            func = labelFormat(prefix = " ")
-        }
-        leafletProxy("map", data = tmp) %>%
-            clearControls() %>%
-            addLegend(
-                title=names(which(radioButtonOptions == input$data_select)),
-                pal = pal(), 
-                values = ~pull(merged_housing_crime, !!input$data_select), 
-                position = "bottomright", 
-                labFormat = func
-            )
-    })
+#     observeEvent(input$data_select, {
+#         tmp = df()
+#         if (input$data_select == "avg_price_per_sqft") {
+#             func = labelFormat(prefix = " $")
+#         } else if (input$data_select == "total_proceeds") {
+#             func = labelFormat(prefix = " $", suffix = "M", transform=function(x) x/1E6)
+#         } else {
+#             func = labelFormat(prefix = " ")
+#         }
+#         leafletProxy("map", data = tmp) %>%
+#             clearControls() %>%
+#             addLegend(
+#                 title=names(which(radioButtonOptions == input$data_select)),
+#                 pal = pal(), 
+#                 values = ~pull(merged_housing_crime, !!input$data_select), 
+#                 position = "bottomright", 
+#                 labFormat = func
+#             )
+#     })
 })
 

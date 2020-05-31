@@ -87,7 +87,7 @@ create_plot = function(df, y_ind, title, ylabel, curr = FALSE, type="point") {
         labs(title = title, y = ylabel, x = "Month")  + 
         scale_y_continuous(label = label, expand = c(0,0), limits = c(0, ifelse(y_ind == 4, 1, max(y, na.rm=TRUE)))) +
         theme_classic() +
-        theme(plot.title = element_text(size = 10, hjust = 0.5))
+        theme(plot.title = element_text(size = 11, hjust = 0.5), axis.title = element_text(size = 10))
     return(p)
 }
 
