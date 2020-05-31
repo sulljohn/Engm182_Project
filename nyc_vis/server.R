@@ -19,6 +19,15 @@ load("../zip_polygons.rda")
 zip_sf = rmapshaper::ms_simplify(zip_sf, keep_shapes=TRUE)
 
 shinyServer(function(input, output) {
+    
+   
+    output$crimescore<- renderText({
+        (input$year+input$area)/1000
+    })
+    
+    output$price <- renderText({
+        input$year-input$area
+    })
 
     df <- reactive({
         data = merged_housing_crime %>%
