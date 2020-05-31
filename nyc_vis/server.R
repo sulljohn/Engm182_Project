@@ -13,10 +13,12 @@ library(jsonlite)
 library(sf)
 library(rmapshaper)
 library(RColorBrewer)
-library(leafpop)
 
 load("../zip_polygons.rda")
-zip_sf = rmapshaper::ms_simplify(zip_sf, keep_shapes=TRUE)
+
+# Create temp folder for popup plots
+folder <- tempfile()
+dir.create(folder)
 
 shinyServer(function(input, output) {
 
@@ -42,19 +44,13 @@ shinyServer(function(input, output) {
     
     observe({
         
+        
         tmp = df()
-        # pnt = st_as_sf(data.frame(x = 174.764474, y = -36.877245),
-        #                coords = c("x", "y"),
-        #                crs = 4326)
-        # 
-        # p2 = levelplot(t(volcano), col.regions = terrain.colors(100))
-        # ggplot(filtered_merged, aes(x = month_char, y = total_proceeds, group = 1))+ geom_line()+scale_x_continuous()
-        filtered_merged  = merged_housing_crime %>%
-            filter(zip_code == 11367)
-        p2 =ggplot(filtered_merged , aes(x = month_char, y = ))
+
         
         leafletProxy("map", data = tmp) %>%
             clearShapes() %>%
+            clearPopups() %>%
             addPolygons(
                 fillColor = ~pal()(disp_data),
                 color = "#b2aeae", # you need to use hex colors
@@ -67,18 +63,53 @@ shinyServer(function(input, output) {
                     color = "black",
                     opacity = 1.0
                 ),
-                popup = ~paste0(
-                    "<b>", neighborhood, " - ", postalcode, "</b><br/>",
-                    "Per capita income in 2015:    $", round(PerCapitaIncome),"</b><br/>",
-                    "Total Population in 2015: ", TotalPop, "</b><br/>",
-                    "Unemployment rate in 2015: ", round(Unemployed), "%"
-                )
-                
-            ) %>%
-        
-        # popupmap<- ggplot(tmp, aes(x = month_char, y = weight_normalized))+geom_point(),
-        addPopupGraphs()
+                layerId = ~postalcode
+            ) 
     })
+    
+    
+    # Observe shape clicks to display popup
+    observeEvent(input$map_shape_click,{
+        event = input$map_shape_click
+        if (is.null(event))
+            return()
+        else {
+            showPopup(event$id, event$lat, event$lng, input$data_select)
+        }
+    })
+    
+    showPopup <- function(id, lat, lng, plot_type) {
+        
+        # Get plot object and other popup data for the chosen zip code
+        plot_type_str = paste(plot_type, "_plot", sep="")
+        zip_data = zip_sf[which(zip_sf$postalcode == id),]
+        cat(zip_data$neighborhood)
+        plot = pull(zip_data, !!plot_type_str)
+        
+        # Write svg file to temporary folder
+        svg(filename= paste(folder,"plot.svg", sep = "/"), 
+            width = 500 * 0.01, height = 300 * 0.01)
+        print(plot)
+        dev.off()
+        
+        # Create popup
+        content <- paste(readLines(paste(folder,"plot.svg",sep="/")), collapse = "")
+        leafletProxy("map") %>%
+            addPopups(
+                lng,
+                lat,
+                popup = paste0(
+                    "<h4>", zip_data$neighborhood, " - ", id, "</h4><br/>",
+                    content, "<br/>",
+                    "<b>2015 Census Data</b><br/>",
+                    "Per capita income:    $", round(zip_data$PerCapitaIncome),"</b><br/>",
+                    "Total Population: ", zip_data$TotalPop, "</b><br/>",
+                    "Unemployment rate: ", round(zip_data$Unemployed), "%"
+                ),
+                layerId = id,
+                options = popupOptions(maxWidth = 500)
+            )
+    }
     
     observeEvent(input$data_select, {
         tmp = df()
