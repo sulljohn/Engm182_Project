@@ -7,7 +7,6 @@ library(sf)
 library(rmapshaper)
 library(RColorBrewer)
 library(zoo)
-# install.packages("leafpop")
 library(ggplot2)
 library(scales)
 
@@ -86,7 +85,7 @@ create_plot = function(df, y_ind, title, ylabel, curr = FALSE, type="point") {
         gg_type +
         geom_smooth() +
         labs(title = title, y = ylabel, x = "Month")  + 
-        scale_y_continuous(label = label, expand = c(0,0), limits = c(0, max(y, na.rm=TRUE)+2)) +
+        scale_y_continuous(label = label, expand = c(0,0), limits = c(0, ifelse(y_ind == 4, 1, max(y, na.rm=TRUE)))) +
         theme_classic() +
         theme(plot.title = element_text(size = 10, hjust = 0.5))
     return(p)
