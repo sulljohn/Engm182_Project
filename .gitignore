@@ -14,3 +14,6 @@ DA Project mapping.R
 app_original file.R
 server.R
 Reg.R
+nyc_vis/rsconnect
+.httr-oauth
+nyc_vis/token.rds

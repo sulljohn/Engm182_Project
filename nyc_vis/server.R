@@ -9,16 +9,10 @@
 library(tidyverse)
 library(shiny)
 library(leaflet)
-library(jsonlite)
 library(sf)
-library(rmapshaper)
 library(RColorBrewer)
 
-load("../zip_polygons.rda")
-
-# Create temp folder for popup plots
-folder <- tempfile()
-dir.create(folder)
+load(paste0(rda_loc, "zip_polygons.rda"))
 
 shinyServer(function(input, output) {
     
