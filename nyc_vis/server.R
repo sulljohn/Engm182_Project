@@ -12,6 +12,8 @@ library(leaflet)
 library(sf)
 library(RColorBrewer)
 library(zoo)
+library(scales)
+library(ggplot2)
 
 load(paste0(rda_loc, "zip_polygons.rda"))
 
@@ -35,7 +37,7 @@ shinyServer(function(input, output) {
     
     observeEvent(input$predict_price, {
         output$price <- renderText({
-            input$sqft - input$age
+            input$sqft - input$year
         })
     })
 
@@ -143,9 +145,7 @@ shinyServer(function(input, output) {
     showPopup <- function(df, id, lat, lng, suff_str, curr = FALSE) {
         
         # Get plot object and other popup data for the chosen zip code
-        # plot_type_str = paste(plot_type, "_plot", sep="")
         zip_data = zip_sf[which(zip_sf$postalcode == id),]
-        # plot = pull(zip_data, !!plot_type_str)
         if (nrow(df) > 0) {
             y = pull(df, 2)
             x = as.yearmon(pull(df, 1))

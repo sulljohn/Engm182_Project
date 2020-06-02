@@ -47,8 +47,8 @@ shinyUI(fluidPage(
                 tabPanel(
                     "Price Predictor",
                     HTML("<br/>"),
-                    numericInput("age", "Building age:", 2000, min =1950, max = 2020),
-                    numericInput("sqft", "Square footage:", 1000, min =0, max = 10000),
+                    numericInput("year", "Building year:", 1950, min=1800, max = 2030),
+                    numericInput("sqft", "Square footage:", 2000, min=0, max = 1000000),
                     actionButton("predict_price", label = "Compute Price"),
                     HTML("<hr/><b>Predicted Price: </b>"),
                     textOutput("price")

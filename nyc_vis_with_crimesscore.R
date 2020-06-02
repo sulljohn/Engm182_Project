@@ -4,11 +4,6 @@ library(shiny)
 library(leaflet)
 library(jsonlite)
 library(sf)
-library(rmapshaper)
-library(RColorBrewer)
-library(zoo)
-library(ggplot2)
-library(scales)
 
 load(file = "Data_Score_by_Time_and_Rating.rda")
 
