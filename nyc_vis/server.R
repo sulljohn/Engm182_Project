@@ -16,6 +16,8 @@ library(scales)
 library(ggplot2)
 
 load(paste0(rda_loc, "zip_polygons.rda"))
+load(paste0(rda_loc, "neural_net.rda"))
+
 
 shinyServer(function(input, output) {
     
