@@ -19,14 +19,14 @@ score_by_time_and_rating = score_by_time_and_rating %>%
 # max(log(score_by_time_and_rating$weight))
 # 
 # max(-1*log(score_by_time_and_rating$weight))
-
-summary(score_by_time_and_rating$weight)
-hist(score_by_time_and_rating$weight)
-summary((score_by_time_and_rating$weight)*100000)
-hist((score_by_time_and_rating$weight)*100000)
-
-summary(log((score_by_time_and_rating$weight)*100000))
-hist(log((score_by_time_and_rating$weight)*100000))
+# 
+# summary(score_by_time_and_rating$weight)
+# hist(score_by_time_and_rating$weight)
+# summary((score_by_time_and_rating$weight)*100000)
+# hist((score_by_time_and_rating$weight)*100000)
+# 
+# summary(log((score_by_time_and_rating$weight)*100000))
+# hist(log((score_by_time_and_rating$weight)*100000))
 
 
 score_by_time_and_rating$weight_transform = log((score_by_time_and_rating$weight)*100000)
@@ -47,7 +47,17 @@ hist(score_by_time_and_rating$weight_normalized)
 
 unique_census = score_by_time_and_rating %>%
     group_by(zip_code) %>%
-    summarize(PerCapitaIncome = PerCapitaIncome[1], Unemployed = Unemployed[1], TotalPop = TotalPop[1])
+    summarize(
+        PerCapitaIncome = PerCapitaIncome[1],
+        Unemployed = Unemployed[1],
+        TotalPop = TotalPop[1],
+        Hispanic =  Hispanic[1],
+        White = White[1],
+        Black = Black[1], 
+        Native = Native[1], 
+        Asian = Asian[1],
+        weight = weight[1]
+    )
     
 
 neighborhoods = read_csv("neighborhoods.csv") %>%
@@ -71,7 +81,6 @@ save(crime_scores, file = "crime_scores.rda")
 zip_sf = rmapshaper::ms_simplify(zip_sf, keep_shapes=TRUE)
 
 save(zip_sf, file="zip_polygons.rda")
-
 
 # rm(list = ls())
 

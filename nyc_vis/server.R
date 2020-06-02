@@ -14,6 +14,7 @@ library(RColorBrewer)
 library(zoo)
 library(scales)
 library(ggplot2)
+library(nnet)
 
 load(paste0(rda_loc, "zip_polygons.rda"))
 load(paste0(rda_loc, "neural_net.rda"))
@@ -39,7 +40,16 @@ shinyServer(function(input, output) {
     
     observeEvent(input$predict_price, {
         output$price <- renderText({
-            input$sqft - input$year
+            input_data = data.frame(gross_square_feet = input$sqft, age = input$age, sale_year = input$sale_year, zip_code = as.character(input$zip))
+            zip_data = zip_sf %>%
+                filter(postalcode == input$zip) %>%
+                slice(1) %>%
+                data.frame() %>%
+                select(postalcode, PerCapitaIncome, White, Black, Asian, Hispanic, Native, TotalPop.x = TotalPop, Unemployed, weight) %>%
+                inner_join(input_data, by = c("postalcode" = "zip_code")) %>%
+                select(-postalcode)
+            
+            return(dollar(predict(fit.nnet, newdata=zip_data)))
         })
     })
 
