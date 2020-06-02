@@ -17,11 +17,12 @@ rda_loc = "../"
 # rda_loc = paste0(folder, "/")
 
 # Load data gropued by month and zip code
-load(paste0(rda_loc, "merged_housing_crime.rda"))
+load(paste0(rda_loc, "grouped_housing.rda"))
+load(paste0(rda_loc, "crime_scores.rda"))
 
 # Build list of radio button choice names and values
 radioButtonOptions = setNames(
-    as.list(colnames(merged_housing_crime)[-c(1:2)]), # values
+    as.list(c(colnames(grouped_housing)[-c(1:3)],colnames(crime_scores)[3])), # values
     c( # choice names
         "Average price per sq. ft.",
         "Number of sales",

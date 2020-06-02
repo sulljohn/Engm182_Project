@@ -11,24 +11,46 @@ library(shiny)
 library(leaflet)
 library(sf)
 library(RColorBrewer)
+library(zoo)
 
 load(paste0(rda_loc, "zip_polygons.rda"))
 
 shinyServer(function(input, output) {
     
+    output$housing_data_select = reactive({
+        return(housing_data_select())
+    })
+    
+    housing_data_select = reactive({
+        if (input$data_select %in% colnames(grouped_housing)[-c(1:3)]) {
+            return(TRUE)
+        } else {
+            return(FALSE)
+        }
+    })
    
-    output$crimescore<- renderText({
-        (input$year+input$area)/1000
+    # output$crimescore<- renderText({
+    #     (input$year+input$area)/1000
+    # })
+    
+    predicted_price = eventReactive(input$predict_price, {
+        input$sqft-input$age
     })
     
     output$price <- renderText({
-        input$year-input$area
+        predicted_price()
     })
 
     df <- reactive({
-        data = merged_housing_crime %>%
-            filter(month_char == input$date_select) %>%
-            select(zip_code, disp_data = !!input$data_select)
+        if (housing_data_select()) {
+            data = grouped_housing %>% 
+                filter(category == input$prop_category, month_char == input$date_select) %>%
+                select(zip_code, disp_data = !!input$data_select)
+        } else {
+            data = crime_scores %>%
+                filter(month_char == input$date_select) %>%
+                select(zip_code, disp_data = !!input$data_select)
+        }
         tmp = merge(zip_sf, data, by.x="postalcode", by.y="zip_code", all.x=TRUE)
         return(tmp)
     })
@@ -98,25 +120,71 @@ shinyServer(function(input, output) {
         if (is.null(event))
             return()
         else {
-            showPopup(event$id, event$lat, event$lng, input$data_select)
+            curr = FALSE
+            if (housing_data_select()) {
+                data = grouped_housing %>%
+                    filter(category == input$prop_category, zip_code == event$id) %>%
+                    select(month_char, !!input$data_select)
+                title_suffix_str = paste("-", input$prop_category)
+                if (input$prop_category == "All") {
+                    title_suffix_str = paste(title_suffix_str, "Categories")
+                }
+                if (input$data_select %in% c("avg_price_per_sqft", "total_proceeds")) {
+                    curr = TRUE
+                }
+            } else {
+                data = crime_scores %>%
+                    filter(zip_code == event$id) %>%
+                    select(month_char, weight_normalized)
+                title_suffix_str = "over Time"
+            }
+            showPopup(data, event$id, event$lat, event$lng, title_suffix_str, curr)
         }
     })
     
-    showPopup <- function(id, lat, lng, plot_type) {
+    showPopup <- function(df, id, lat, lng, suff_str, curr = FALSE) {
         
         # Get plot object and other popup data for the chosen zip code
-        plot_type_str = paste(plot_type, "_plot", sep="")
+        # plot_type_str = paste(plot_type, "_plot", sep="")
         zip_data = zip_sf[which(zip_sf$postalcode == id),]
-        plot = pull(zip_data, !!plot_type_str)
-        
-        # Write svg file to temporary folder
-        svg(filename= paste(folder,"plot.svg", sep = "/"), 
-            width = 500 * 0.01, height = 300 * 0.01)
-        print(plot)
-        dev.off()
+        # plot = pull(zip_data, !!plot_type_str)
+        if (nrow(df) > 0) {
+            y = pull(df, 2)
+            x = as.yearmon(pull(df, 1))
+            title = paste(names(which(radioButtonOptions == colnames(df)[2])), suff_str)
+            ylabel = names(which(radioButtonOptions == colnames(df)[2]))
+            
+            if (curr == TRUE) {
+                if (max(y, na.rm=TRUE) > 1e6) {
+                    label = label_number(prefix = "$", suffix = "M", scale = 1e-6)
+                } else if (max(y, na.rm = TRUE) > 1e4) {
+                    label =  label_number(prefix = "$", suffix = "K", scale = 1e-3)
+                } else {
+                    label = label_number(prefix = "$")
+                }
+            } else {
+                label = label_number()
+            }
+            plot = ggplot(data=NULL, aes(x, y)) +
+                geom_line() +
+                geom_smooth() +
+                labs(title = title, y = ylabel, x = "Month")  +
+                scale_y_continuous(label = label, expand = c(0,0), limits = c(0, ifelse(colnames(df)[2] == "weight_normalized", 1, max(y, na.rm=TRUE)))) +
+                theme_classic() +
+                theme(plot.title = element_text(size = 11, hjust = 0.5), axis.title = element_text(size = 10))
+    
+            # Write svg file to temporary folder
+            svg(filename= paste(folder,"plot.svg", sep = "/"),
+                width = 500 * 0.01, height = 300 * 0.01)
+            print(plot)
+            dev.off()
+    
+            content <- paste(readLines(paste(folder,"plot.svg",sep="/")), collapse = "")
+        } else {
+            content = ""
+        }
         
         # Create popup
-        content <- paste(readLines(paste(folder,"plot.svg",sep="/")), collapse = "")
         leafletProxy("map") %>%
             addPopups(
                 lng,
@@ -134,5 +202,6 @@ shinyServer(function(input, output) {
             )
     }
     
+    outputOptions(output, "housing_data_select", suspendWhenHidden = FALSE)
 })
 
