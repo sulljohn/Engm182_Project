@@ -17,13 +17,13 @@ load(paste0(rda_loc, "zip_polygons.rda"))
 shinyServer(function(input, output) {
     
    
-    output$crimescore<- renderText({
-        (input$year+input$area)/1000
-    })
-    
-    output$price <- renderText({
-        input$year-input$area
-    })
+    # output$crimescore<- renderText({
+    #     (input$year+input$area)/1000
+    # })
+    # 
+    # output$price <- renderText({
+    #     input$year-input$area
+    # })
 
     df <- reactive({
         data = merged_housing_crime %>%
@@ -101,6 +101,20 @@ shinyServer(function(input, output) {
             showPopup(event$id, event$lat, event$lng, input$data_select)
         }
     })
+    
+    observeEvent(input$button1,{
+        output$crimescore<- renderText({
+                isolate((input$year+input$area))
+            })
+
+            output$price <- renderText({
+                isolate(input$year-input$area)
+            })
+        
+    })
+    
+    
+    
     
     showPopup <- function(id, lat, lng, plot_type) {
         
