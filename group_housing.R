@@ -4,7 +4,7 @@ library(tidyverse)
 
 load("cleaned_housing.rda")
 
-grouped_housing_all = grouped_housing = cleaned_df_housing %>%
+grouped_housing_all = cleaned_df_housing %>%
     mutate(month_char = format(as.Date(sale_date), "%Y-%m")) %>%
     group_by(zip_code, month_char) %>%
     summarize(
@@ -29,4 +29,4 @@ grouped_housing = cleaned_df_housing %>%
 
 save(grouped_housing, file="grouped_housing.rda")
 
-rm(list = ls())
+# rm(list = ls())

@@ -7,6 +7,7 @@ library(sf)
 
 load(file = "Data_Score_by_Time_and_Rating.rda")
 
+
 # Remove NAs and outliers
 score_by_time_and_rating = score_by_time_and_rating %>%
     filter(!is.na(weight)) %>%
@@ -15,8 +16,34 @@ score_by_time_and_rating = score_by_time_and_rating %>%
     filter(zip_code != "11251") %>% # Super highly variable variable scores in this code
     filter(!(zip_code == "10307" & (month > "2007-07-01" & month  < "2007-10-01"))) # Spike at this time in this code
     
+# max(log(score_by_time_and_rating$weight))
+# 
+# max(-1*log(score_by_time_and_rating$weight))
 
-score_by_time_and_rating$weight_normalized = score_by_time_and_rating$weight/max(score_by_time_and_rating$weight)
+summary(score_by_time_and_rating$weight)
+hist(score_by_time_and_rating$weight)
+summary((score_by_time_and_rating$weight)*100000)
+hist((score_by_time_and_rating$weight)*100000)
+
+summary(log((score_by_time_and_rating$weight)*100000))
+hist(log((score_by_time_and_rating$weight)*100000))
+
+
+score_by_time_and_rating$weight_transform = log((score_by_time_and_rating$weight)*100000)
+
+hist(score_by_time_and_rating$weight_transform)
+    
+summary(log((score_by_time_and_rating$weight)*100000))
+hist(log((score_by_time_and_rating$weight)*100000))
+
+hist(log((score_by_time_and_rating$weight)*1000))
+
+score_by_time_and_rating$weight_normalized = score_by_time_and_rating$weight_transform/max(score_by_time_and_rating$weight_transform)
+
+hist(score_by_time_and_rating$weight_normalized)
+
+
+# hist(-1*log(score_by_time_and_rating$weight_normalized))
 
 unique_census = score_by_time_and_rating %>%
     group_by(zip_code) %>%
@@ -46,7 +73,7 @@ zip_sf = rmapshaper::ms_simplify(zip_sf, keep_shapes=TRUE)
 save(zip_sf, file="zip_polygons.rda")
 
 
-rm(list = ls())
+# rm(list = ls())
 
 
 

@@ -2,7 +2,6 @@
 
 library(tidyverse)
 library(stringr)
-library(postmastr)
 
 load("geocoded_housing.rda")
 
@@ -75,4 +74,4 @@ cleaned_df_housing = geocoded_df_housing %>%
 
 save(cleaned_df_housing, file="cleaned_housing.rda")
 
-rm(list = ls())
+# rm(list = ls())
