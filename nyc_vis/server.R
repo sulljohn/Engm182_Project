@@ -33,12 +33,10 @@ shinyServer(function(input, output) {
     #     (input$year+input$area)/1000
     # })
     
-    predicted_price = eventReactive(input$predict_price, {
-        input$sqft-input$age
-    })
-    
-    output$price <- renderText({
-        predicted_price()
+    observeEvent(input$predict_price, {
+        output$price <- renderText({
+            input$sqft - input$age
+        })
     })
 
     df <- reactive({
