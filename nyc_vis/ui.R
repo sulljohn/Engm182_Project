@@ -32,6 +32,8 @@ shinyUI(fluidPage(
             ),
             numericInput("year", "Enter year built", 2000, min =1950, max = 2020),
             numericInput("area", "Enter area of property", 1000, min =0, max = 10000),
+            actionButton(inputId = "button1", label = "Calculate"),
+            
          
             h5("The predicted crime score is:"),
             textOutput("crimescore"),
