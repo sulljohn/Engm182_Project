@@ -6,7 +6,6 @@
 #
 #    http://shiny.rstudio.com/
 
-library(tidyverse)
 library(shiny)
 library(leaflet)
 library(sf)
@@ -14,11 +13,10 @@ library(RColorBrewer)
 library(zoo)
 library(scales)
 library(ggplot2)
-library(nnet)
 
-load(paste0(rda_loc, "zip_polygons.rda"))
 load(paste0(rda_loc, "neural_net.rda"))
-
+# load(paste0(rda_loc, "bagged_cart.rda"))
+load(paste0(rda_loc, "random_forest.rda"))
 
 shinyServer(function(input, output) {
     
@@ -34,23 +32,51 @@ shinyServer(function(input, output) {
         }
     })
    
-    # output$crimescore<- renderText({
-    #     (input$year+input$area)/1000
-    # })
     
-    observeEvent(input$predict_price, {
-        output$price <- renderText({
-            input_data = data.frame(gross_square_feet = input$sqft, age = input$age, sale_year = input$sale_year, zip_code = as.character(input$zip))
+    output$price = renderText({
+        price_text()
+    })
+    
+    price_text = eventReactive(input$predict_price, {
+        if (input$zip != "")
+            zip = unique_zips[which(unique_zips$select_names==input$zip), 1]
+        else {
+            zip = NA
+        }
+        input_data = data.frame(gross_square_feet = input$sqft, age = input$age, sale_year = input$sale_year, zip_code = zip, stringsAsFactors = FALSE)
+        bad_cols = colnames(input_data)[colSums(is.na(input_data)) > 0]
+        if (length(bad_cols) == 0){
             zip_data = zip_sf %>%
-                filter(postalcode == input$zip) %>%
+                filter(postalcode == zip) %>%
                 slice(1) %>%
                 data.frame() %>%
                 select(postalcode, PerCapitaIncome, White, Black, Asian, Hispanic, Native, TotalPop.x = TotalPop, Unemployed, weight) %>%
                 inner_join(input_data, by = c("postalcode" = "zip_code")) %>%
                 select(-postalcode)
-            
-            return(dollar(predict(fit.nnet, newdata=zip_data)))
-        })
+            if (input$model_select == "fit.rf"){
+                predicted_val = predict(fit.rf, newdata=zip_data)
+            } else if (input$model_select == "fit.nnet") {
+                predicted_val = predict(fit.nnet, newdata=zip_data)
+            } else if (input$model_select == "fit.bgcrt") {
+                predicted_val = predict(fit.bgcrt, newdata=zip_data)
+            }
+            return(paste0("<br/>", dollar(predicted_val)))
+        } else {
+            msg = ""
+            if ("gross_square_feet" %in% bad_cols) {
+                msg = paste0(msg, "<br/>Error: Please enter a square footage!")
+            }
+            if ("age" %in% bad_cols) {
+                msg = paste0(msg, "<br/>Error: Please enter building age!")
+            }
+            if ("sale_year" %in% bad_cols) {
+                msg = paste0(msg, "<br/>Error: Please enter a sale year!")
+            }
+            if ("zip_code" %in% bad_cols) {
+                msg = paste0(msg, "<br/>Error: Please enter a location!")
+            }
+            return(paste0("<font color=\"#eb4034\">", msg, "</font>"))
+        }
     })
 
     df <- reactive({
@@ -63,7 +89,7 @@ shinyServer(function(input, output) {
                 filter(month_char == input$date_select) %>%
                 select(zip_code, disp_data = !!input$data_select)
         }
-        tmp = merge(zip_sf, data, by.x="postalcode", by.y="zip_code", all.x=TRUE)
+        tmp = merge(zip_sf, data, by.x="postalcode", by.y="zip_code", all.x=TRUE, no.dups=FALSE)
         return(tmp)
     })
     
@@ -77,7 +103,6 @@ shinyServer(function(input, output) {
         
         
         tmp = df()
-        
         legend_labels = NULL
         
         pal = colorNumeric(
@@ -113,7 +138,7 @@ shinyServer(function(input, output) {
                     color = "black",
                     opacity = 1.0
                 ),
-                layerId = ~postalcode
+                layerId = ~shape_id
             ) %>%
             addLegend(
                 title=names(which(radioButtonOptions == input$data_select)),
@@ -132,10 +157,11 @@ shinyServer(function(input, output) {
         if (is.null(event))
             return()
         else {
+            zip_clicked = zip_sf$postalcode[which(zip_sf$obj_id == event$id)]
             curr = FALSE
             if (housing_data_select()) {
                 data = grouped_housing %>%
-                    filter(category == input$prop_category, zip_code == event$id) %>%
+                    filter(category == input$prop_category, zip_code == zip_clicked) %>%
                     select(month_char, !!input$data_select)
                 title_suffix_str = paste("-", input$prop_category)
                 if (input$prop_category == "All") {
@@ -146,18 +172,18 @@ shinyServer(function(input, output) {
                 }
             } else {
                 data = crime_scores %>%
-                    filter(zip_code == event$id) %>%
+                    filter(zip_code == zip_clicked) %>%
                     select(month_char, weight_normalized)
                 title_suffix_str = "over Time"
             }
-            showPopup(data, event$id, event$lat, event$lng, title_suffix_str, curr)
+            showPopup(data, zip_clicked, event$id, event$lat, event$lng, title_suffix_str, curr)
         }
     })
     
-    showPopup <- function(df, id, lat, lng, suff_str, curr = FALSE) {
+    showPopup <- function(df, zip, id, lat, lng, suff_str, curr = FALSE) {
         
         # Get plot object and other popup data for the chosen zip code
-        zip_data = zip_sf[which(zip_sf$postalcode == id),]
+        zip_data = zip_sf[which(zip_sf$postalcode == zip),]
         if (nrow(df) > 0) {
             y = pull(df, 2)
             x = as.yearmon(pull(df, 1))
@@ -200,7 +226,7 @@ shinyServer(function(input, output) {
                 lng,
                 lat,
                 popup = paste0(
-                    "<h4>", zip_data$neighborhood, " - ", id, "</h4><br/>",
+                    "<h4>", zip_data$neighborhood, " - ", zip, "</h4><br/>",
                     content, "<br/>",
                     "<b>2015 Census Data</b><br/>",
                     "Per capita income:    $", round(zip_data$PerCapitaIncome),"</b><br/>",

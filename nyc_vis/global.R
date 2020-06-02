@@ -1,4 +1,6 @@
 
+library(tidyverse)
+
 # Create temp folder for popup plots and rdas, set rda file location
 folder <- tempfile()
 dir.create(folder)
@@ -19,6 +21,14 @@ rda_loc = "../"
 # Load data gropued by month and zip code
 load(paste0(rda_loc, "grouped_housing.rda"))
 load(paste0(rda_loc, "crime_scores.rda"))
+load(paste0(rda_loc, "zip_polygons.rda"))
+
+unique_zips = zip_sf %>% data.frame() %>%
+    select(postalcode, neighborhood) %>%
+    group_by(postalcode) %>%
+    summarize(neighborhood = neighborhood[ifelse(min(which(!is.na(neighborhood)))==Inf,1,min(which(!is.na(neighborhood))))]) %>%
+    mutate(select_names = paste0(ifelse(is.na(.data$neighborhood), "", paste0(.data$neighborhood, " - ")), .data$postalcode)) %>% data.frame() %>%
+    select(-neighborhood)
 
 # Build list of radio button choice names and values
 radioButtonOptions = setNames(

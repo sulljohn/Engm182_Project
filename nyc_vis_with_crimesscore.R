@@ -31,16 +31,16 @@ score_by_time_and_rating = score_by_time_and_rating %>%
 
 score_by_time_and_rating$weight_transform = log((score_by_time_and_rating$weight)*100000)
 
-hist(score_by_time_and_rating$weight_transform)
-    
-summary(log((score_by_time_and_rating$weight)*100000))
-hist(log((score_by_time_and_rating$weight)*100000))
-
-hist(log((score_by_time_and_rating$weight)*1000))
+# hist(score_by_time_and_rating$weight_transform)
+#     
+# summary(log((score_by_time_and_rating$weight)*100000))
+# hist(log((score_by_time_and_rating$weight)*100000))
+# 
+# hist(log((score_by_time_and_rating$weight)*1000))
 
 score_by_time_and_rating$weight_normalized = score_by_time_and_rating$weight_transform/max(score_by_time_and_rating$weight_transform)
 
-hist(score_by_time_and_rating$weight_normalized)
+# hist(score_by_time_and_rating$weight_normalized)
 
 
 # hist(-1*log(score_by_time_and_rating$weight_normalized))
@@ -65,7 +65,10 @@ neighborhoods = read_csv("neighborhoods.csv") %>%
     unnest(zips) %>%
     add_row(zips = "00083", neighborhood = "Central Park")
 
-zip_sf = st_read("nyc_zip_code_tabulation_areas_polygons.geojson", stringsAsFactors = FALSE)
+zip_sf = st_read("https://raw.githubusercontent.com/fedhere/PUI2015_EC/master/mam1612_EC/nyc-zip-code-tabulation-areas-polygons.geojson", stringsAsFactors = FALSE) %>%
+    select(OBJECTID, postalCode, geometry) %>%
+    rename(postalcode = postalCode, shape_id = OBJECTID)
+    
 zip_sf = merge(zip_sf, unique_census, by.x="postalcode", by.y="zip_code", all.x=TRUE)
 zip_sf = merge(zip_sf, neighborhoods, by.x="postalcode", by.y="zips", all.x=TRUE)
 
@@ -73,16 +76,16 @@ crime_scores = score_by_time_and_rating %>%
     mutate(month_char = format(as.Date(month), "%Y-%m"))%>%
     filter(month > "2002-12-31") %>%
     data.frame() %>%
-    select(-c("weight","sum_weight","Men", "Women", "Hispanic", "White", "Black", "Native", "Asian", "TotalPop", "PerCapitaIncome", "Unemployed"))
+    select(-c("weight","weight_transform", "sum_weight","Men", "Women", "Hispanic", "White", "Black", "Native", "Asian", "TotalPop", "PerCapitaIncome", "Unemployed"))
 
 save(crime_scores, file = "crime_scores.rda")
 
 
-zip_sf = rmapshaper::ms_simplify(zip_sf, keep_shapes=TRUE)
+zip_sf = rmapshaper::ms_simplify(zip_sf, keep = 0.05, keep_shapes=TRUE)
 
 save(zip_sf, file="zip_polygons.rda")
 
-# rm(list = ls())
+rm(list = ls())
 
 
 

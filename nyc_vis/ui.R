@@ -20,7 +20,6 @@ shinyUI(fluidPage(
         sidebarPanel(
             tabsetPanel(
                 tabPanel(
-                    
                     "Map Controls",
                     HTML("<br/>"),
                     sliderTextInput(
@@ -50,10 +49,31 @@ shinyUI(fluidPage(
                     numericInput("age", "Building age (years):", 50, min=1800, max = 2030),
                     numericInput("sqft", "Square footage:", 2000, min=0, max = 1000000),
                     numericInput("sale_year", "Sale Year:", 2010, min=1950, max = 2030),
-                    numericInput("zip", "Zip Code:", 10001, min = 0, max = 20000),
+                    selectizeInput("zip", "Location:",
+                        selected = NULL,
+                        choices = unique_zips$select_names,
+                        options = list(
+                            placeholder = "Search by Neighborhood or Zip Code",
+                            onInitialize = I('function() { this.setValue(""); }')
+                        )
+                    ),
+                    radioButtons(
+                        "model_select",
+                        label="Predictive Model:",
+                        choiceNames = c(
+                            # "Bagged cart",
+                            "Neural Net",
+                            "Random forest"
+                        ),
+                        choiceValues = c(
+                            # "fit.bgcrt", 
+                            "fit.nnet",
+                            "fit.rf"
+                        )
+                    ),
                     actionButton("predict_price", label = "Compute Price"),
                     HTML("<hr/><b>Predicted Price: </b>"),
-                    textOutput("price")
+                    htmlOutput("price")
                 )
             )
         ),
