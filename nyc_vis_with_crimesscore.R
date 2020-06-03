@@ -10,8 +10,8 @@ load(file = "Data_Score_by_Time_and_Rating.rda")
 
 # Remove NAs and outliers
 score_by_time_and_rating = score_by_time_and_rating %>%
-    filter(!is.na(weight)) #%>%
-    # filter(month > "2006-12-31") %>% # Data reported differntly before 2007 it seems
+    filter(!is.na(weight)) %>%
+    filter(month > "2006-12-31")  # Data reported differntly before 2007 it seems
     # filter(!(zip_code == "11430" & month < "2009-01-01")) %>% # Very unusally high scores in this code before this time
     # filter(zip_code != "11251") %>% # Super highly variable variable scores in this code
     # filter(!(zip_code == "10307" & (month > "2007-07-01" & month  < "2007-10-01"))) # Spike at this time in this code
@@ -22,14 +22,14 @@ score_by_time_and_rating = score_by_time_and_rating %>%
 # 
 # summary(score_by_time_and_rating$weight)
 hist(score_by_time_and_rating$weight)
-summary((score_by_time_and_rating$weight)*1000000)
+summary((score_by_time_and_rating$weight)*100000)
 # hist((score_by_time_and_rating$weight)*100000)
 # 
 # summary(log((score_by_time_and_rating$weight)*100000))
 # hist(log((score_by_time_and_rating$weight)*100000))
 
 
-score_by_time_and_rating$weight_transform = log((score_by_time_and_rating$weight)*1000000)
+score_by_time_and_rating$weight_transform = log((score_by_time_and_rating$weight)*100000)
 
 #hist(score_by_time_and_rating$weight_transform)
 #     
