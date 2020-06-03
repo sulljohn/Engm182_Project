@@ -62,7 +62,7 @@ shinyUI(fluidPage(
                         label="Predictive Model:",
                         choiceNames = c(
                             # "Bagged cart",
-                            "Neural Net",
+                            "Neural net",
                             "Random forest"
                         ),
                         choiceValues = c(

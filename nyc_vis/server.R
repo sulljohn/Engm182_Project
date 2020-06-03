@@ -13,10 +13,12 @@ library(RColorBrewer)
 library(zoo)
 library(scales)
 library(ggplot2)
+library(caret)
+library(randomForest)
 
-load(paste0(rda_loc, "neural_net.rda"))
+load("neural_net.rda")
 # load(paste0(rda_loc, "bagged_cart.rda"))
-load(paste0(rda_loc, "random_forest.rda"))
+load("random_forest.rda")
 
 shinyServer(function(input, output) {
     
@@ -53,7 +55,8 @@ shinyServer(function(input, output) {
                 select(postalcode, PerCapitaIncome, White, Black, Asian, Hispanic, Native, TotalPop.x = TotalPop, Unemployed, weight) %>%
                 inner_join(input_data, by = c("postalcode" = "zip_code")) %>%
                 select(-postalcode)
-            if (input$model_select == "fit.rf"){
+            if (is.na(zip_data)) {return(paste0("<font color=\"#eb4034\">Error: No valid census data for this zip code!</font>"))}
+            if (input$model_select == "fit.rf") {
                 predicted_val = predict(fit.rf, newdata=zip_data)
             } else if (input$model_select == "fit.nnet") {
                 predicted_val = predict(fit.nnet, newdata=zip_data)
@@ -157,7 +160,7 @@ shinyServer(function(input, output) {
         if (is.null(event))
             return()
         else {
-            zip_clicked = zip_sf$postalcode[which(zip_sf$obj_id == event$id)]
+            zip_clicked = zip_sf$postalcode[zip_sf$shape_id == event$id]
             curr = FALSE
             if (housing_data_select()) {
                 data = grouped_housing %>%
@@ -220,13 +223,18 @@ shinyServer(function(input, output) {
             content = ""
         }
         
+        if (is.na(zip_data$neighborhood)) {
+            neighborhood_str = ""
+        } else {
+            neighborhood_str = paste(zip_data$neighborhood, " - ")
+        }
         # Create popup
         leafletProxy("map") %>%
             addPopups(
                 lng,
                 lat,
                 popup = paste0(
-                    "<h4>", zip_data$neighborhood, " - ", zip, "</h4><br/>",
+                    "<h4>", neighborhood_str, zip, "</h4><br/>",
                     content, "<br/>",
                     "<b>2015 Census Data</b><br/>",
                     "Per capita income:    $", round(zip_data$PerCapitaIncome),"</b><br/>",
