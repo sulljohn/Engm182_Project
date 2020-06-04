@@ -8,17 +8,53 @@ output:
     number_sections: true
 ---
 
-See tutorial class code; we should make it a goal for the final document to look like this: https://rpubs.com/jladams/covid-shiny
 
-OR: https://rpubs.com/jladams/covid-leaflet
 
-# Section 1
+# User Interface
 
-R-code test:
+User interface is the user facing side of the Shiny application. It contains various display elements such as titlePanel, sidebarLayout, radioButtons, tabPanel etc. Following steps show step-wise buid up for UI.
 
-```{r}
-print("test")
+#### Importing necessary libraries
+
+
+library(shiny)
+library(leaflet)
+library(shinyWidgets)
+
+#### Creating display elements
+
+Now that we have imported libraries, we start adding code inside fluidpage to create display elements. 'titlePanel' gives the heading, mainPanel
+
 ```
+# Define UI for application that draws a histogram
+shinyUI(fluidPage(
+    HTML(html_fix),
+    titlePanel("NYC Real Estate and Crime"),
+    sidebarLayout(
+        sidebarPanel(),
+        mainPanel(
+            leafletOutput(
+                "map",
+                width="100%",
+                height="90vh"
+            )
+        ),
+        position="left"
+    )
+))
+```   
+
+
+
+
+
+```
+print("test")
+
+```
+```
+```
+
 
 # Section 2
 
