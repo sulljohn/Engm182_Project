@@ -1,0 +1,32 @@
+---
+title: "NYC Crime and Real Estate Data Project"
+subtitle: "Final Tutorial - ENGM 182"
+author: Vikhyat Khare, Omkar Kshirsagar, Carter Noordsij, John Sullivan
+date: June 9, 2020
+output:
+  html_document:
+    number_sections: true
+    toc: true
+---
+
+See tutorial class code; we should make it a goal for the final document to look like this: https://rpubs.com/jladams/covid-shiny
+
+OR: https://rpubs.com/jladams/covid-leaflet
+
+# Section 1
+
+R-code test:
+
+```{r}
+print("test")
+```
+
+# Section 2
+
+Other code test (or code that we do not want to run):
+
+```
+System.out.println("Hello World!");
+```
+
+## Subsection 1
