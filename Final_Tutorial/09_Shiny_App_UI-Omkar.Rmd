@@ -12,14 +12,15 @@ output:
 
 # User Interface
 
-User interface is the user facing side of the Shiny application. It contains various display elements such as titlePanel, sidebarLayout, radioButtons, tabPanel etc. Following steps show step-wise buid up for UI.
+User interface is the user facing side of the Shiny application. It contains various display elements such as titlePanel, sidebarLayout, radioButtons, tabPanel etc. Following steps show how we step-wise buit up code for UI.
 
 #### Importing necessary libraries
 
-
+```
 library(shiny)
 library(leaflet)
 library(shinyWidgets)
+```
 
 #### Creating display elements
 
