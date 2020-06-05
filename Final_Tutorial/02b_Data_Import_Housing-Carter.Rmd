@@ -5,73 +5,83 @@ author: Vikhyat Khare, Omkar Kshirsagar, Carter Noordsij, John Sullivan
 date: June 9, 2020
 output:
   html_document:
+    theme: paper
     number_sections: true
+    highlight: kate
+    toc: true
 ---
 
-# Setup Instructions
 
-Download data from Google Drive / code from GitHub
+## Importing the Real Estate Data
+The yearly real estate data we downloaded from the [city of New York's OpenData portal](https://opendata.cityofnewyork.us) were formatted in Excel files (with the exception of that from 2016-2017, which were contained in a single CSV file, and 2018, which were missing entirely). Each Excel file contained all the real estate sales in a particular borough during a particular calendar year from 2003 to 2020.
 
-The following code reads the data in and gets unique values:
-
+To import the Excel file data into R, we start by creating a list of the all the filenames:
+```{r eval = FALSE}
+# Get list of all excel file names for 2003-2015 and 2019-2020 data
+all_files = c(
+    list.files(path="../Data/RE_2003-2015", pattern="*.xls", full.names=TRUE, recursive=FALSE),
+    list.files(path="../Data/RE_Apr2019-Mar2020", pattern="*.xls", full.names=TRUE, recursive=FALSE)
+)
 ```
-#Code for census data
-block_loc <- read.csv("../Data/Census_2015/census_block_loc.csv")
-head(block_loc)
-summary(block_loc)
-nrow(block_loc)
-#This data frame has 5 columns (Latitude, longitude and block code for a block as well as its county and state) and 38,396 rows
+<br/>
+Next, we create a custom function to pass to `lapply()` that will import the data from each file into a dataframe, and store all those dataframes into a corresponding list called `dfs_list`. Although all the data across every file were consistently formatted with the same column headers, frustratingly, they did not always start on the same row (but always started on one of the first 10 rows). Because of this, we had to do two reads of each file—an initial read of the first 10 rows and columns just to find the index of the first column header (titled "BOROUGH" in our case), and a second read to actually import the data starting from that index. [This stack overflow post](https://stackoverflow.com/questions/43242467/reading-excel-in-r-how-to-find-the-start-cell-in-messy-spreadsheets?rq=1) was very helpful in setting up this 'double-read' functionality. We also use `clean_names()` from the `janitor` package to make the column names easier to work with later on.
+```{r eval = FALSE}
+library(tidyverse)
+library(readxl)
+library(data.table)
+library(janitor)
 
-
-#Checking if there are any missing or infinite 
-missing_val = any(is.na(block_loc))
-#There are no missing values in the dataframe
-
-#Checking for unique values 
-unique_state <- unique(block_loc$State)
-unique_county <- unique(block_loc$County)
-unique_block <- unique(block_loc$BlockCode)
-#There are 38,936 locations in 20,406 blocks which are in 15 counties in NJ and NY in the data
+# Import data from all files into a list of datarames
+dfs_list = lapply(all_files, function(filename) {
+  
+    # Setting up the first read
+    temp_read = suppressMessages(read_excel(filename))
+    desired_sheet = 1
+    skip_rows = NULL
+    col_skip = 0
+    search_string = "BOROUGH"
+    max_cols_to_search = 10
+    max_rows_to_search = 10
+    
+    # First read to get the cell index of the first column header
+    while (length(skip_rows) == 0) {
+        col_skip = col_skip + 1
+        if (col_skip == max_cols_to_search) break
+        skip_rows = which(stringr::str_detect(temp_read[1:max_rows_to_search,col_skip][[1]],search_string)) - 0
+    }
+  
+    # Second read to actually import the data
+    df = suppressMessages(read_excel(
+        filename,
+        sheet = desired_sheet,
+        skip = skip_rows,
+        .name_repair="universal"
+    ) ) %>% clean_names()
+  
+    return(df)
+})
 ```
+<br/>
+The only data we still need to import are the 2016-2017 data from the CSV file. We append it to our list of dataframes before combining that list into a single dataframe with `rbindlist()` and saving it as in an RDA file for easy access later on.
+```{r eval = FALSE}
+# Append 2016-2017 data from csv file to list of data frames
+dfs_list = append(dfs_list, list(read_csv("../Data/RE_2016-2017/nyc-rolling-sales.csv")[,-(1)] %>% clean_names()))
 
-Our goal was to look at each county separately. The rest of this code divides it into separate datatframes:
-
+# Combine list of data frames into a single data frame and save as RDA file
+df_housing = rbindlist(dfs_list)
+save(df_housing, file="Data_Housing.rda")
 ```
-#Splitting dataframes into different states and then different counties
-library(dplyr)
-block_loc_NY <- filter(block_loc, State == "NY")
-#This has 24,240 locations
-block_loc_NJ <- filter(block_loc, State == "NJ")
-#This has 14,156 locations
-unique(block_loc_NY$County)
-block_loc_Richmond <- filter(block_loc, County == "Richmond") #3933 locations
-block_loc_Queens <- filter(block_loc, County == "Queens") #6872 locations
-block_loc_Nassau <- filter(block_loc, County == "Nassau") #4906 locations
-block_loc_Kings <- filter(block_loc, County == "Kings") #3729 locations
-block_loc_NewYork <- filter(block_loc, County == "New York") #1295 locations
-block_loc_Bronx <- filter(block_loc, County == "Bronx") #2224 locations
-block_loc_Westchester <- filter(block_loc, County == "Westchester") #1281 locations
+<br/>
+Now that we have our housing data, we can move on to importing the crime data!
+<br/>
+```{r echo = FALSE, message = FALSE, warning = FALSE}
+setwd("/Users/carternoordsij/Documents/dartmouth/Academics/Class materials/engm_182/Engm182_Project")
+load("Data_Housing.rda")
+library(knitr)
+library(kableExtra)
 
-unique(block_loc_NJ$County)
-block_loc_Middlesex <- filter(block_loc, County == "Middlesex") #760 locations
-block_loc_Monmouth <- filter(block_loc, County == "Monmouth") #1117 locations
-block_loc_Union<- filter(block_loc, County == "Union") #1553 locations
-block_loc_Hudson <- filter(block_loc, County == "Hudson") #2400 locations
-block_loc_Essex <- filter(block_loc, County == "Essex") #3302 locations
-block_loc_Bergen <- filter(block_loc, County == "Bergen") #3456 locations
-block_loc_Passaic <- filter(block_loc, County == "Passaic") #1539 locations
-block_loc_Morris <- filter(block_loc, County == "Morris") #29 locations
-
-#importing nyc census tracts file
-nyc_tracts <- read.csv("../Data/Census_2015/nyc_census_tracts.csv")
-head(nyc_tracts)
-
-#Splitting this into different dataframes
-nyc_tracts_sex <- select(nyc_tracts, CensusTract, County, Borough, TotalPop, Men, Women) #Actual number of men and women in population
-nyc_tracts_race <- select(nyc_tracts, CensusTract, County, Borough, TotalPop, Hispanic, White, Black, Native, Asian) #Percentage of different race in population
-nyc_tracts_income <- select(nyc_tracts, CensusTract, County, Borough, TotalPop, Citizen, Professional, Service, Office, Construction, Production) #Percentage of different jobs
-nyc_tracts_jobs <- select(nyc_tracts, CensusTract, County, Borough, TotalPop, Citizen, Income, IncomeErr, IncomePerCap, IncomePerCapErr, Poverty, ChildPoverty) #Income and Poverty data
-nyc_tracts_commute <- select(nyc_tracts, CensusTract, County, Borough, TotalPop, Citizen, Drive, Carpool, Transit, Walk, OtherTransp, WorkAtHome, MeanCommute) #Percentage of different ways that people use for commuting. Don't know MeanCommute, maybe it is the percentage of people commuting every day
-nyc_tracts_employment <- select(nyc_tracts, CensusTract, County, Borough, TotalPop, Citizen, Employed, PrivateWork, PublicWork, SelfEmployed, FamilyWork, Unemployment)#Percentage of different kinds of employment
+kable(head(df_housing)) %>%
+    kable_styling() %>%
+    scroll_box(width = "100%", height = "300px")
 ```
-
+<br/>

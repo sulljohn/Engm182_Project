@@ -1,32 +1,33 @@
 ---
-title: "NYC Crime and Real Estate Data Project"
-subtitle: "Final Tutorial - ENGM 182"
+title: "NYC Crime and Real Estate Data Project Tutorial"
+subtitle: "ENGM 182 - Data Analytics"
 author: Vikhyat Khare, Omkar Kshirsagar, Carter Noordsij, John Sullivan
 date: June 9, 2020
 output:
   html_document:
+    theme: paper
     number_sections: true
+    highlight: kate
     toc: true
 ---
 
-See tutorial class code; we should make it a goal for the final document to look like this: https://rpubs.com/jladams/covid-shiny
+# Background
 
-OR: https://rpubs.com/jladams/covid-leaflet
+This tutorial page describes the final project we conducted for Professor Geoffrey Parker's Spring 2020 Data Analytics course (ENGM 182) at Dartmouth College's Thayer School of Engineering. The gaol of the project was to create a compelling and approachable a visualization of historical NYC real estate sales and crime data, and an accompanying model for predicting the price of a hypothetical real estate sale.
 
-# Section 1
+We chose to use the R programming language to complete this task. The secions below describe the code and methodologies for acquiring, cleaning, and processing the data, as well as the code that drives the Shiny app visualization.
 
-R-code test:
+The project's source code is available on [Github](https://github.com/sulljohn/Engm182_Project), and the Shiny app is hosted for viewing on [shinyapps.io](https://jcnoordsij.shinyapps.io/nyc_vis/). Our data sources can be downloaded at the links below:
 
-```{r}
-print("test")
+* NYC Crimes 2006-2017: https://data.cityofnewyork.us/Public-Safety/NYPD-Complaint-Data-Historic/qgea-i56i
+* NYC Real Estate Data 2003-2015: https://data.cityofnewyork.us/Housing-Development/NYC-Calendar-Sales-Archive-/uzf5-f8n2
+* NYC Real Estate Data 2016-2017: https://www.kaggle.com/new-york-city/nyc-property-sales
+* NYC Real Estate Past Year:  https://www1.nyc.gov/site/finance/taxes/property-rolling-sales-data.page
+* NYC Census and Economic Data 2015: https://www.kaggle.com/muonneutrino/new-york-city-census-data
+
+# Importing Our Data
+
+This section describes how we imported the data from each of our data sources into an R environment, where it can be then be easily cleaned and processed. The directory structure for our data files is pictured below:
+```{r echo = FALSE}
+fs::dir_tree(path="../../Data")
 ```
-
-# Section 2
-
-Other code test (or code that we do not want to run):
-
-```
-System.out.println("Hello World!");
-```
-
-## Subsection 1
