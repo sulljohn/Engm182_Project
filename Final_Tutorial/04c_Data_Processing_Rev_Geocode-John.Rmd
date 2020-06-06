@@ -8,24 +8,142 @@ output:
     number_sections: true
 ---
 
-See tutorial class code; we should make it a goal for the final document to look like this: https://rpubs.com/jladams/covid-shiny
+# Converting coordinates to zip codes
 
-OR: https://rpubs.com/jladams/covid-leaflet
+There was difficulty with initally processing the location data into a format for analysis. For the crime and census data:
 
-# Section 1
+* Crime data - complaints were initially recorded with only a latitude and longitude
+* Census data - the census data used census tracts for identifying locations
 
-R-code test:
+For the regressions and displaying the data visually, the data needs to be grouped by similar location. In this case, zipcode was chosen to be the level to group by. By classifying the data entries in a zipcode, the effect of the zipcode can be studied.
 
-```{r}
-print("test")
+At first, an API was used to convert the coordinates from the crime data to zip codes. The revgeocode function from the ggmap package was used and applied to each crime complaint. However, it was taking too long to make the requests to retrieve each of the zipcodes. Although this route was not pursued, it may be possible to perform the API requests in parallel.
+
+Instead, it was chosen to perform the reverse geocoding locally, as to avoid having to make requests to an API service for each zip code. Further, since the zip codes were limited to only New York, it was possible to only download the location data for this area.
+
+## Sources for latitude and longitude to zipcode code and datta
+
+The source for the code to retrieve the zipcodes from latitude and longitude coordinates locally is: https://stackoverflow.com/questions/46267287/reverse-geocoding-speed
+
+The source for the geospatial polygon data to process the coordinates is: https://jsspina.carto.com/tables/nyc_zip_code_tabulation_areas_polygons/public/map
+
+## Processing the crime data
+
+First the crime data is read in:
+
+```{r eval=FALSE}
+sf <- sf::st_read("nyc_zip_code_tabulation_areas_polygons.geojson")
 ```
 
-# Section 2
+Then the desired latitude and longitude fields are taken. the complaint number is also taken so that the crime-zipcode datat can be joined again later. The NA values are omitted.
 
-Other code test (or code that we do not want to run):
+```{r eval=FALSE}
+CMPLNT_NUM <- c(df_crime$CMPLNT_NUM)
+latitude <- c(df_crime$Latitude)
+longitude <- c(df_crime$Longitude)
 
+x = data.frame(CMPLNT_NUM, longitude, latitude)
+x <- na.omit(x)
+
+sf_x <- sf::st_as_sf(x, coords = c("longitude", "latitude"))
 ```
-System.out.println("Hello World!");
+
+As stated in the sourced guide above for reverse geocoding this data, "To perform spatial operations, the coordinate reference system needs to match between the two geometries." 
+
+```{r eval=FALSE}
+st_crs(sf_x) <- st_crs(sf)
 ```
 
-## Subsection 1
+The coordinates are processed with the st_witthin function and put into an output using sapply:
+
+```{r eval=FALSE}
+res <- st_within(sf_x, sf)
+
+out <- sapply(res, function(x) as.character(sf$postalcode[x]))
+```
+
+The output for each zipcode was a list of zipcodes even though there was just one. There were multiple outputs in the case that one was trying to link overlapping geometries with the data. The zipcodes were converted to the proper format:
+
+```{r eval=FALSE}
+out2 <- map(out, 1) # Take first element from each list
+out3 <- lapply(out, function(x) ifelse(length(x) == 1, x[1], NA)) # Handle NAs
+out4 <- vapply(out3, paste, collapse = ", ", character(1L)) # Flattten listst; source: https://stackoverflow.com/questions/24829027/unimplemented-type-list-when-trying-to-write-table
+
+sf_x$zip_code <- out4
+```
+
+Finally, the zipcodes are linked back with the crime data and saved:
+
+```{r eval=FALSE}
+# Putting it back with the sf_data
+df_crime <- left_join(df_crime, sf_x, by = "CMPLNT_NUM")
+
+# Format column as dates
+df_crime$CMPLNT_FR_DT <- as.Date(df_crime$CMPLNT_FR_DT, format = "%m/%d/%Y")
+
+# This column NEEDS to be removed because it causes errors
+df_crime$geometry<-NULL
+
+# Saving the data with thet important information
+save(df_crime, file='Data_Crime_w_Zipcodes.rda')
+```
+
+## Processing the census data
+
+The process for finding the zipcodes that corresponded to the census data was different. The census tract information is more granular than at the zipcode level. The mapping between tracts and zipcodes is imported and joined to the census data, so each element has a corresponding zipcode.
+
+```{r eval=FALSE}
+tract_zips <- my_data <- read_excel("TRACT_ZIP_032020.xlsx")
+
+names(tract_zips)[names(tract_zips) == 'ZIP'] <- 'zip_code'
+names(tract_zips)[names(tract_zips) == 'TRACT'] <- 'CensusTract'
+tract_zips$CensusTract <- as.numeric(tract_zips$CensusTract)
+
+nyc_tracts <- left_join(nyc_tracts, tract_zips, by="CensusTract")
+
+# Save updated nyc_tracs
+save(nyc_tracts, file='Data_NYC_Tracts.rda')
+
+#Adding all the parameters required for regression in zip_population file
+zip_population <- subset(nyc_tracts, select = c(CensusTract,zip_code,TotalPop, Men, Women, Hispanic, White, Black, Native, Asian, IncomePerCap, Unemployment))
+```
+
+The most important element was the corresponding populations for each zipcode. The population data for each demographic was summed accross each zipcode. The demogrpahic information was initially stored as percents, so it was necessary to multiply those percents by the total population for each census tract.
+
+```{r eval=FALSE}
+#Converting the demographic and unemployment percentages to numbers and income per capita to income
+zip_population$Hispanic.number <- zip_population$Hispanic*zip_population$TotalPop/100
+zip_population$White.number <- zip_population$White*zip_population$TotalPop/100
+zip_population$Black.number <- zip_population$Black*zip_population$TotalPop/100
+zip_population$Native.number <- zip_population$Native*zip_population$TotalPop/100
+zip_population$Asian.number <- zip_population$Asian*zip_population$TotalPop/100
+zip_population$IncomeTot <- zip_population$IncomePerCap*zip_population$TotalPop
+#Percentage of people in the age group of 18-65 in NY is 65% source: https://www.census.gov/quickfacts/newyorkcitynewyork
+zip_population$Unemployment.number <- zip_population$Unemployment*0.65*zip_population$TotalPop/100
+
+#Aggregating the various census tract data into 1 zip code
+zip_population <- subset(zip_population, select = c(zip_code,TotalPop, Men, Women, Hispanic.number, White.number, Black.number, Native.number, Asian.number, IncomeTot, Unemployment.number))
+zip_population <- aggregate(.~zip_code, data = zip_population, FUN = sum)
+
+#Convert back the demographics and unemployment to % and IncomeTot to per capita income
+zip_population$Hispanic.number <- zip_population$Hispanic.number*100/zip_population$TotalPop
+zip_population$White.number <- zip_population$White.number*100/zip_population$TotalPop
+zip_population$Black.number <- zip_population$Black.number*100/zip_population$TotalPop
+zip_population$Native.number <- zip_population$Native.number*100/zip_population$TotalPop
+zip_population$Asian.number <- zip_population$Asian.number*100/zip_population$TotalPop
+zip_population$IncomeTot <- zip_population$IncomeTot/zip_population$TotalPop
+zip_population$Unemployment.number <- zip_population$Unemployment.number*100/(0.65*zip_population$TotalPop)
+```
+
+Finally, the columns were renamed as needed. The data for zipcode to population demographic was saved for analylsis later:
+
+```{r eval=FALSE}
+#Renaming the column headers
+colnames(zip_population) <- c("zip_code", "TotalPop", "Men", "Women", "Hispanic", "White", "Black", "Native", "Asian", "PerCapitaIncome", "Unemployed")
+
+save(zip_population, file = "Data_Zip_Population.rda")
+```
+
+## Source for census tract to zipccode data
+
+The folllowing link includes thte updated census tract to zipcode information: https://www.huduser.gov/portal/datasets/usps_crosswalk.html
