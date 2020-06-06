@@ -8,26 +8,25 @@ output:
     number_sections: true
 ---
 
-
-
 # User Interface
 
-User interface is the user facing side of the Shiny application. It contains various display elements such as titlePanel, sidebarLayout, radioButtons, tabPanel etc. Following steps show how we step-wise buit up code for UI.
+User interface is the user facing side of the Shiny application. 
 
-#### Importing necessary libraries
+It contains various display elements such as titlePanel, sidebarLayout, radioButtons, tabPanel etc. Following steps show how we step-wise buit up code for UI.
+
+## Importing necessary libraries
 
 ```
 library(shiny)
 library(leaflet)
 library(shinyWidgets)
 ```
+ 
+## Creating display elements
 
-#### Creating display elements
-
-Now that we have imported libraries, we start adding code inside fluidpage to create display elements. 'titlePanel' gives the heading, mainPanel
+Now that we have imported libraries, we start adding code inside fluidPage to create display elements. 'titlePanel' gives the heading, mainPanel
 
 ```
-# Define UI for application that draws a histogram
 shinyUI(fluidPage(
     HTML(html_fix),
     titlePanel("NYC Real Estate and Crime"),
@@ -45,24 +44,18 @@ shinyUI(fluidPage(
 ))
 ```   
 
+## Creating tabsetPanel and tabPanel
+
+
+
 
 
 
 
 ```
 print("test")
-
-```
-```
 ```
 
 
-# Section 2
 
-Other code test (or code that we do not want to run):
 
-```
-System.out.println("Hello World!");
-```
-
-## Subsection 1
