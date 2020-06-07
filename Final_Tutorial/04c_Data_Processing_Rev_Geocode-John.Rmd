@@ -29,7 +29,17 @@ The source for the geospatial polygon data to process the coordinates is: https:
 
 ## Processing the crime data
 
-First, the crime data is read in:
+First, the packages are loaded:
+
+```{r eval=FALSE}
+library(sf)
+library(purrr)
+library(lubridate)
+library(dplyr)
+```
+
+
+The crime data is read in with the following command:
 
 ```{r eval=FALSE}
 sf <- sf::st_read("nyc_zip_code_tabulation_areas_polygons.geojson")
@@ -89,6 +99,14 @@ save(df_crime, file='Data_Crime_w_Zipcodes.rda')
 ```
 
 ## Processing the census data
+
+First, the packages are loaded:
+
+```{r eval=FALSE}
+library(readxl)
+library(dplyr)
+library(plyr)
+```
 
 The process for finding the zipcodes that corresponded to the census data was different. The census tract information is more granular than at the zipcode level. The mapping between tracts and zipcodes is imported and joined to the census data, so each element has a corresponding zipcode.
 

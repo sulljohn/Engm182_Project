@@ -10,6 +10,15 @@ output:
 
 # Group crime information by month, year, and zipcode
 
+First, the relevant datafiles are imported to the environment and the packages are loaded:
+
+```{r eval=FALSE}
+library(lubridate)
+library(dplyr)
+load(file = "Data_Crime_w_Zipcodes.rda")
+load(file = "Data_Zip_Population.rda")
+```
+
 For analysis, it is helpful to have the events grouped by month and year, then by a given zipcode. Then, a field like the crime score can be aggregated an normalized for this criteria. In this case, the crime data is formatted in the desired way with the following command:
 
 ```{r eval=FALSE}

@@ -26,9 +26,17 @@ Each of the issues can be respectively addressed:
 
 The steps for setting up the regression, running the model, and making predictions are in the following sections.
 
-### Load data
+### Load packages and import data
 
-The desired data is loaded into R for the regression.
+First, the packages are loaded:
+
+```{r eval=FALSE}
+library(dplyr)
+library(RcppArmadillo)
+library(lubridate)
+```
+
+The desired data is imported into R for the regression.
 
 ```{r eval=FALSE}
 #Regress sale price with sale year, land area, gross area, tax class, building class, year built
