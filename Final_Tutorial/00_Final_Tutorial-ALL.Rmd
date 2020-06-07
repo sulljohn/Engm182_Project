@@ -14,7 +14,7 @@ output:
 
 ```{r include = FALSE}
 library(tidyverse)
-knitr::opts_knit$set(root.dir = "/Users/carternoordsij/Documents/dartmouth/Academics/Class materials/engm_182/Engm182_Project", warning=FALSE, message=FALSE)
+knitr::opts_knit$set(root.dir = "..")
 ```
 
 # Background
@@ -35,7 +35,7 @@ The project's source code is available on [Github](https://github.com/sulljohn/E
 
 This section describes how we imported the data from each of our data sources into an R environment, where it can be then be easily cleaned and processed. Expand the tab below to see the directory structure we used for our downloaded data files. <details><summary>Data directory structure</summary>
 ```{r echo = FALSE, comment=NA}
-setwd("/Users/carternoordsij/Documents/dartmouth/Academics/Class materials/engm_182")
+setwd("..")
 fs::dir_tree(path="Data")
 ```
 </details>
@@ -102,7 +102,6 @@ save(df_housing, file="Data_Housing.rda")
 
 Now that we have our housing data, we can move on to importing the crime data!
 ```{r echo = FALSE, message = FALSE, warning = FALSE}
-setwd("/Users/carternoordsij/Documents/dartmouth/Academics/Class materials/engm_182/Engm182_Project")
 load("Data_Housing.rda")
 library(knitr)
 library(kableExtra)
@@ -413,8 +412,9 @@ rda_loc = "../"
 ```
 
 Now that we've set their location, we can load in the RDA files. We'll also create a `unique_zips` data frame to hold popup titles for each zipcode polygon in the shapefile.
+
 ```{r echo = FALSE}
-rda_loc = "/Users/carternoordsij/Documents/dartmouth/Academics/Class materials/engm_182/Engm182_Project/"
+rda_loc = ""
 ```
 
 ```{r warning = FALSE, message=FALSE}
