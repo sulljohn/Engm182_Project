@@ -14,7 +14,8 @@ User interface is the user facing side of the Shiny application.It contains vari
 
 ## Importing necessary libraries
 
-```
+``` {r eval = FALSE}
+
 library(shiny)
 library(leaflet)
 library(shinyWidgets)
@@ -22,9 +23,10 @@ library(shinyWidgets)
  
 ## Creating basic layout of UI and display elements
 
-Now that we have imported libraries, we start adding code inside fluidPage to create display elements. 'titlePanel' gives the heading, mainPanel creates the map using leaflet. We'll have user inputs in the sidebarPanel. We'll add those in later steps.
+Now that we have imported libraries, we start adding code inside fluidPage to create display elements.  We'll have user inputs in the sidebarPanel. We'll add those in later steps. Final code of ui script is given in the end.
 
-```
+``` {r eval = FALSE}
+
 shinyUI(fluidPage(
     HTML(html_fix),
     titlePanel("NYC Real Estate and Crime"),
@@ -46,7 +48,8 @@ shinyUI(fluidPage(
 
 Now we'll start coding inside sidebarLayout to create display elements. We created 2 tabs, first tab for the attribute we want to see at a chosen time. sliderTextInput allows us to choose a specific time. radioButtons links to radioButtonOptions in Global.R file. It allows us to choose the attribute of the data we want to see. conditionalPanel shows real esate based on the "property type" we have chosen from the drop down list. 
 
-```
+``` {r eval = FALSE}
+
     titlePanel("NYC Real Estate and Crime"),
     sidebarLayout(
         sidebarPanel(
@@ -76,9 +79,12 @@ Now we'll start coding inside sidebarLayout to create display elements. We creat
                     )
                 )
 ```
-Now we create second tab for the predictive model integration in the app. We build radioButtons to choose between models. Price predictor 4 inputs to compute the price. Clicking on the actionButton price is predicted.
+## Predictive model inputs
 
-```
+Now we create second tab for the predictive model integration in the app. We build radioButtons to choose between models. Price predictor takes 4 inputs to compute the price. Clicking on the actionButton shows predicted price.
+
+``` {r eval = FALSE}
+
           tabPanel(
                     "Price Predictor",
                     HTML("<br/>"),
@@ -115,7 +121,8 @@ Now we create second tab for the predictive model integration in the app. We bui
 ```
 ## Final code of ui.R
 
-```
+``` {r eval = FALSE}
+
 library(shiny)
 library(leaflet)
 library(shinyWidgets)
