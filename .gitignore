@@ -18,3 +18,4 @@ nyc_vis/rsconnect
 .httr-oauth
 nyc_vis/token.rds
 *.html
+df_sale_census_crime.csv
