@@ -8,24 +8,108 @@ output:
     number_sections: true
 ---
 
-See tutorial class code; we should make it a goal for the final document to look like this: https://rpubs.com/jladams/covid-shiny
 
-OR: https://rpubs.com/jladams/covid-leaflet
+## Data Preparation
 
-# Section 1
+Before booting up the shiny app, we perform a few more processing steps on the data and set up our polygon shapefile for drawing the zip code regions on a leaflet map.
 
-R-code test:
+We start by loading in the semi-processed crime data and then filtering out data before 2007, as upon closer inspection, the complaints from before that point seems to have been reported differently and would skew graphs we plan to show in the visualization.
 
 ```{r}
-print("test")
+load("Data_Score_by_Time_and_Rating.rda")
+
+# Remove NAs and outliers
+score_by_time_and_rating = score_by_time_and_rating %>%
+    filter(!is.na(weight)) %>%
+    filter(month > "2006-12-31")
 ```
 
-# Section 2
+Next, we normalize the crime score by mulitplying by 10000 (to make the minimum score greater than 1), taking it's log, and then dividing by the maximum value to get an approximately normal distribution from 0 to 1.
 
-Other code test (or code that we do not want to run):
+```{r}
+hist(score_by_time_and_rating$weight)
 
+score_by_time_and_rating$weight_normalized = log((score_by_time_and_rating$weight)*100000)/max(score_by_time_and_rating$weight_transform)
+
+hist(score_by_time_and_rating$weight_normalized)
 ```
-System.out.println("Hello World!");
+
+To display the 2015 census data for each zip code, we grab all the unique zip codes from the `score_by_time_and_rating` data frame, and their assciated demographic and economic characteristics.
+```{r}
+unique_census = score_by_time_and_rating %>%
+    group_by(zip_code) %>%
+    summarize(
+        PerCapitaIncome = PerCapitaIncome[1],
+        Unemployed = Unemployed[1],
+        TotalPop = TotalPop[1],
+        Hispanic =  Hispanic[1],
+        White = White[1],
+        Black = Black[1], 
+        Native = Native[1], 
+        Asian = Asian[1],
+        weight = weight[1]
+    )
 ```
 
-## Subsection 1
+```{r echo = FALSE}
+library(knitr)
+library(kableExtra)
+kable(head(unique_census, 50), caption = "<p style=\"padding-left:10px\"> **unique_census**</p>") %>%
+    kable_styling() %>%
+    scroll_box(width = "100%", height = "300px")
+```
+
+Now that we've extracted the census data, we can remove all those unecessary columns from the data frame and reformat month column as a character to match the style of the `grouped_housing` data frame. We save this as a new data frame that we'll load into our Shiny app.
+```{r}
+crime_scores = score_by_time_and_rating %>%
+    mutate(month_char = format(as.Date(month), "%Y-%m"))%>%
+    data.frame() %>%
+    select(-c("weight","weight_transform", "sum_weight","Men", "Women", "Hispanic", "White", "Black", "Native", "Asian", "TotalPop", "PerCapitaIncome", "Unemployed"))
+
+save(crime_scores, file = "crime_scores.rda")
+```
+
+```{r echo = FALSE}
+library(knitr)
+library(kableExtra)
+kable(head(crime_scores, 50), caption = "<p style=\"padding-left:10px\"> **crime_scores**</p>") %>%
+    kable_styling() %>%
+    scroll_box(width = "100%", height = "300px")
+```
+
+    
+To display the neighborhood names for each zip code (if they have one), we'll pull them in from a csv file created using [information from the New York State's Department of Health](https://www.health.ny.gov/statistics/cancer/registry/appendix/neighborhoods.htm).
+
+```{r}
+neighborhoods = read_csv("neighborhoods.csv") %>%
+    mutate(zips = sapply(zips, function(x) as.list(strsplit(x," ")))) %>%
+    unnest(zips) %>%
+    add_row(zips = "00083", neighborhood = "Central Park")
+```
+
+```{r echo = FALSE}
+library(knitr)
+library(kableExtra)
+kable(head(neighborhoods, 50), caption = "<p style=\"padding-left:10px\"> **neighborhoods**</p>") %>%
+    kable_styling() %>%
+    scroll_box(width = "50%", height = "300px")
+```
+
+Finally, we'll load in the shapefile that contains all of the zip code polygins (with `st_read`) and merge it with the `neighborhoods` key and the 2015 census data. Before we saving it as an RDA file also we reduce the number of polygon vertices using `ms_simplify()'. This will allow for better performance of our Shiny app.
+```{r eval = FALSE}
+library(jsonlite)
+library(sf)
+
+zip_sf = st_read("https://raw.githubusercontent.com/fedhere/PUI2015_EC/master/mam1612_EC/nyc-zip-code-tabulation-areas-polygons.geojson", stringsAsFactors = FALSE) %>%
+    select(OBJECTID, postalCode, geometry) %>%
+    rename(postalcode = postalCode, shape_id = OBJECTID)
+    
+zip_sf = merge(zip_sf, unique_census, by.x="postalcode", by.y="zip_code", all.x=TRUE)
+zip_sf = merge(zip_sf, neighborhoods, by.x="postalcode", by.y="zips", all.x=TRUE)
+
+
+zip_sf = rmapshaper::ms_simplify(zip_sf, keep = 0.05, keep_shapes=TRUE)
+
+save(zip_sf, file="zip_polygons.rda")
+```
+

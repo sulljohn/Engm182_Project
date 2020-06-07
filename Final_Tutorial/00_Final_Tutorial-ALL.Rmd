@@ -9,11 +9,17 @@ output:
     number_sections: true
     highlight: kate
     toc: true
+    toc_float: true
 ---
+
+```{r include = FALSE}
+library(tidyverse)
+knitr::opts_knit$set(root.dir = "/Users/carternoordsij/Documents/dartmouth/Academics/Class materials/engm_182/Engm182_Project", warning=FALSE, message=FALSE)
+```
 
 # Background
 
-This tutorial page describes the final project we conducted for Professor Geoffrey Parker's Spring 2020 Data Analytics course (ENGM 182) at Dartmouth College's Thayer School of Engineering. The gaol of the project was to create a compelling and approachable a visualization of historical NYC real estate sales and crime data, and an accompanying model for predicting the price of a hypothetical real estate sale.
+This tutorial page describes the final project we conducted for Professor Geoffrey Parker's Spring 2020 Data Analytics course (ENGM 182) at Dartmouth College's Thayer School of Engineering. The goal of the project was to create a compelling and approachable a visualization of historical NYC real estate sales and crime data, and an accompanying model for predicting the price of a hypothetical real estate sale.
 
 We chose to use the R programming language to complete this task. The secions below describe the code and methodologies for acquiring, cleaning, and processing the data, as well as the code that drives the Shiny app visualization.
 
@@ -25,9 +31,440 @@ The project's source code is available on [Github](https://github.com/sulljohn/E
 * NYC Real Estate Past Year:  https://www1.nyc.gov/site/finance/taxes/property-rolling-sales-data.page
 * NYC Census and Economic Data 2015: https://www.kaggle.com/muonneutrino/new-york-city-census-data
 
-# Importing Our Data
+# Importing Data
 
-This section describes how we imported the data from each of our data sources into an R environment, where it can be then be easily cleaned and processed. The directory structure for our data files is pictured below:
-```{r echo = FALSE}
-fs::dir_tree(path="../../Data")
+This section describes how we imported the data from each of our data sources into an R environment, where it can be then be easily cleaned and processed. Expand the tab below to see the directory structure we used for our downloaded data files. <details><summary>Data directory structure</summary>
+```{r echo = FALSE, comment=NA}
+setwd("/Users/carternoordsij/Documents/dartmouth/Academics/Class materials/engm_182")
+fs::dir_tree(path="Data")
 ```
+</details>
+
+## Importing the Real Estate Data
+The yearly real estate data we downloaded from the [city of New York's OpenData portal](https://opendata.cityofnewyork.us) were formatted in Excel files (with the exception of that from 2016-2017, which were contained in a single CSV file, and 2018, which were missing entirely). Each Excel file contained all the real estate sales in a particular borough during a particular calendar year from 2003 to 2020.
+
+To import the Excel file data into R, we start by creating a list of the all the filenames.
+```{r eval = FALSE}
+# Get list of all excel file names for 2003-2015 and 2019-2020 data
+all_files = c(
+    list.files(path="../Data/RE_2003-2015", pattern="*.xls", full.names=TRUE, recursive=FALSE),
+    list.files(path="../Data/RE_Apr2019-Mar2020", pattern="*.xls", full.names=TRUE, recursive=FALSE)
+)
+```
+
+Next, we create a custom function to pass to `lapply()` that will import the data from each file into a dataframe, and store all those dataframes into a corresponding list called `dfs_list`. Although all the data across every file were consistently formatted with the same column headers, frustratingly, they did not always start on the same row (but always started on one of the first 10 rows). Because of this, we had to do two reads of each file—an initial read of the first 10 rows and columns just to find the index of the first column header (titled "BOROUGH" in our case), and a second read to actually import the data starting from that index. [This stack overflow post](https://stackoverflow.com/questions/43242467/reading-excel-in-r-how-to-find-the-start-cell-in-messy-spreadsheets?rq=1) was very helpful in setting up this 'double-read' functionality. We also use `clean_names()` from the `janitor` package to make the column names easier to work with later on.
+```{r eval = FALSE}
+library(tidyverse)
+library(readxl)
+library(data.table)
+library(janitor)
+
+# Import data from all files into a list of datarames
+dfs_list = lapply(all_files, function(filename) {
+  
+    # Setting up the first read
+    temp_read = suppressMessages(read_excel(filename))
+    desired_sheet = 1
+    skip_rows = NULL
+    col_skip = 0
+    search_string = "BOROUGH"
+    max_cols_to_search = 10
+    max_rows_to_search = 10
+    
+    # First read to get the cell index of the first column header
+    while (length(skip_rows) == 0) {
+        col_skip = col_skip + 1
+        if (col_skip == max_cols_to_search) break
+        skip_rows = which(stringr::str_detect(temp_read[1:max_rows_to_search,col_skip][[1]],search_string)) - 0
+    }
+  
+    # Second read to actually import the data
+    df = suppressMessages(read_excel(
+        filename,
+        sheet = desired_sheet,
+        skip = skip_rows,
+        .name_repair="universal"
+    ) ) %>% clean_names()
+  
+    return(df)
+})
+```
+
+The only data we still need to import are the 2016-2017 data from the CSV file. We append it to our list of dataframes before combining that list into a single dataframe with `rbindlist()` and saving it as in an RDA file for easy access later on.
+```{r eval = FALSE}
+# Append 2016-2017 data from csv file to list of data frames
+dfs_list = append(dfs_list, list(read_csv("../Data/RE_2016-2017/nyc-rolling-sales.csv")[,-(1)] %>% clean_names()))
+
+# Combine list of data frames into a single data frame and save as RDA file
+df_housing = rbindlist(dfs_list)
+save(df_housing, file="Data_Housing.rda")
+```
+
+Now that we have our housing data, we can move on to importing the crime data!
+```{r echo = FALSE, message = FALSE, warning = FALSE}
+setwd("/Users/carternoordsij/Documents/dartmouth/Academics/Class materials/engm_182/Engm182_Project")
+load("Data_Housing.rda")
+library(knitr)
+library(kableExtra)
+
+kable(head(df_housing, 50), caption = "<p style=\"padding-left:10px\"> **df_housing**</p>") %>%
+    kable_styling() %>%
+    scroll_box(width = "100%", height = "300px")
+```
+
+# Data Cleaning and Processing
+
+After importing the data, we moved on to cleaning and processing. Cleaning the data involved removing the entries that were either irrelevant or incomplete for the purposes of our project. Processing involved geocoding the data, grouping it spatiotemporally, and then computing new metrics to help describe each group.
+
+Grouping the data would allow us to more easily draw observe trends and draw meaningful conclusions, and we decided to group the real estate and crime data entries by zip code and month. The ~250 zip code areas in NYC would give us enough granularity to see the how the myriad of different regions in New York City differ from one another over time, but also enough courseness to guarantee acceptable response times of our visualization app, and ensure that there were usually multiple entries in each group to average across
+
+## Geocoding the Real Estate Data
+
+In order to group the real estate data by zip code, we first need to attach a zip code value to each entry in our data (a process known as "geocoding", or "reverse-geocoding" to be more precise). To do this, we use the [Geoclient API](https://developer.cityofnewyork.us/api/geoclient-api) available on the city's [Developer Portal](https://developer.cityofnewyork.us). Before pulling from the API, we do some quick cleaning by converting the `borough`, `sale_price`, and `gross_square_feet` columns to the `numeric` data type (to make sure they're not incorrectly stored as `character` or `factor` types). Then we filter out some of the data with bad `sale_price` and `gross_square_feet` values, as this makes for fewer API queries and we know we won't want use those entries in our analysis anyway. The last step before pulling from the API is creating the `bbl` column, which is a 10 digit combination of the `borough`, `block`, and `lot` columns. We will pass each entry's `bbl` number to the API, which will then return the zip code (among other data) for that specific plot of land.
+
+```{r eval = FALSE}
+library(tidyverse)
+
+load("Data_Housing.rda")
+
+# Convert chr variables to numerics
+df_housing$borough = as.numeric(df_housing$borough)
+df_housing$sale_price = as.numeric(df_housing$sale_price)
+df_housing$gross_square_feet = as.numeric(df_housing$gross_square_feet)
+
+# Get only data with valid sale prices and square footages
+# Build borough-block-lot (BBL) ID for reverse geocoding
+df_housing = df_housing %>%
+  filter(sale_price > 0) %>%
+  filter(gross_square_feet > 1) %>%
+  mutate(bbl = borough * 1e9 + block * 1e4 + lot)
+```
+
+A nifty CRAN package appropriately titled [`geoclient`](https://rdrr.io/github/austensen/geoclient/man/geoclient-package.html) allows us to pull data from the Geoclient API in just a single line of code. However, because the API is public and free, the rate of requests from a single account is limited and it took ~7 hours to query all 1.4 mllion properties. After the queries are complete, we bind the returned API data to the existing `df_housing` data frame in a new data frame called `geocoded_df_housing`.
+
+```{r eval = FALSE}
+library(geoclient)
+
+# Query the API
+bbl_df = geo_bbl(df_housing$bbl, id = APPLICATION_ID, key = API_KEY)
+
+# Join the existing data with the API data
+geocoded_df_housing = bind_cols(df_housing, bbl_df)
+```
+
+## Cleaning the Real Estate Data
+
+In the next step, we modify data from a CSV file with all NYC building class codes to include a column labeling the building category of each class code (e.g., Residential, Commercial, Industrial, etc.).
+
+```{r, message=FALSE, warning=FALSE}
+building_class_key = read_csv("BUILDING_CLASS.csv") %>%
+  group_by(BUILDING_CODE_ID) %>%
+  summarize(category = str_to_title(TYPE[1])) %>%
+  rename(class_code = BUILDING_CODE_ID) %>%
+  mutate(category = case_when(
+    substring(class_code, 1,1) %in% c("A","B","C","D","R") ~ "Residential",
+    substring(class_code, 1,1) %in% c("S") ~ "Mixed",
+    substring(class_code, 1,1) %in% c("H","K","L","O") ~ "Commercial",
+    substring(class_code, 1,1) %in% c("E","F","G","T","U") ~ "Industrial",
+    substring(class_code, 1,1) %in% c("V") ~ "Vacant",
+    substring(class_code, 1,1) %in% c("I","J","M","N","P","Q","W") ~ "Civic",
+    substring(class_code, 1,1) %in% c("Y") ~ "Government",
+    substring(class_code, 1,1) %in% c("Z") ~ "Other"
+  ))
+```
+
+```{r echo = FALSE, message = FALSE, warning = FALSE}
+library(knitr)
+library(kableExtra)
+
+kable(building_class_key, caption = "<p style=\"padding-left:10px\"> **building_class_key**</p>") %>%
+    kable_styling() %>%
+    scroll_box(width = "30%", height = "300px")
+```
+<br/>
+Now we select the columns from `geocoded_df_housing` that we want to work with moving forward, filter out missing values and high/low-priced outliers, and use the building class codes to assign a category to each building sale. This is all stored and saved new data frame called `cleaned_df_housing`, which we will use for grouping in the next sub-section.
+
+```{r, eval = FALSE}
+cleaned_df_housing = geocoded_df_housing %>%
+  select(
+    building_class_at_present,
+    zip_code,
+    gross_square_feet,
+    sale_price,
+    sale_date,
+  ) %>%
+  rename(lat = latitudeInternalLabel) %>%
+  rename(lng = longitudeInternalLabel) %>%
+  filter(!(is.na(lat) | is.na(lng))) %>%
+  filter(!(is.na(zip_code) | zip_code == 0)) %>%
+  filter(!(is.na(sale_price))) %>%
+  filter(!(is.na(gross_square_feet) | gross_square_feet <= 0)) %>%
+  mutate(price_per_sqft = sale_price/gross_square_feet) %>%
+  filter(price_per_sqft <= 2500) %>%
+  filter(price_per_sqft > 20) %>%
+  mutate(zip_code = sapply(zip_code, as.character)) %>%
+  left_join(building_class_key,  by = c("building_class_at_present" = "class_code"))
+
+save(cleaned_df_housing, file="cleaned_housing.rda")
+```
+
+```{r echo = FALSE, message = FALSE, warning = FALSE}
+library(knitr)
+library(kableExtra)
+load("cleaned_housing.rda")
+kable(head(cleaned_df_housing, 50), caption = "<p style=\"padding-left:10px\"> **cleaned_df_housing**</p>") %>%
+    kable_styling() %>%
+    column_spec(5, width_min = "90px") %>%
+    scroll_box(width = "100%", height = "300px")
+```
+
+<br/>
+
+## Grouping the Real Estate Data
+
+Now that we have the real estate geocoded and cleaned, we can group it by aggregating all sales that took place in the same zip code and during the same month. We will create 3 new variables to describe each group: average price per square foot (`avg_price_per_sqft`), total number of sales (`num_sales`), and total proceeds from all sales (`total_proceeds`).
+```{r}
+load("cleaned_housing.rda")
+
+grouped_housing_all = cleaned_df_housing %>%
+    mutate(month_char = format(as.Date(sale_date), "%Y-%m")) %>%
+    group_by(zip_code, month_char) %>%
+    summarize(
+        category = "All",
+        avg_price_per_sqft = mean(price_per_sqft),
+        num_sales = n(),
+        total_proceeds = sum(sale_price)
+    )
+```
+
+Next, we peform the same grouping function again, but with building category as an extra grouping variable. This will allow us to filter the displayed data by building category in the UI for our visualization. We combine the groups of individual categories with the groups of all categories to create a single data frame. Then we filter high-sales outliers and save this data frame for visualization in our Shiny app.
+
+```{r}
+grouped_housing = cleaned_df_housing %>%
+    mutate(month_char = format(as.Date(sale_date), "%Y-%m")) %>%
+    group_by(zip_code, month_char, category) %>%
+    summarize(
+        avg_price_per_sqft = mean(price_per_sqft),
+        num_sales = n(),
+        total_proceeds = sum(sale_price)
+    ) %>%
+    bind_rows(grouped_housing_all) %>%
+    filter(total_proceeds < 200000000) %>%
+    data.frame()
+
+save(grouped_housing, file="grouped_housing.rda")
+```
+
+```{r echo = FALSE}
+library(knitr)
+library(kableExtra)
+kable(head(grouped_housing, 50), caption = "<p style=\"padding-left:10px\"> **grouped_housing**</p>") %>%
+    kable_styling() %>%
+    scroll_box(width = "100%", height = "300px")
+```
+<br/>
+
+# Regression Modeling
+
+# Machine Learning Modeling
+
+# Shiny App Visualization
+
+This section describes the implmentation of our shiny app visalization, which can be viewed [live on shinyapps.io](https://jcnoordsij.shinyapps.io/nyc_vis/).
+
+## Data Preparation
+
+Before booting up the shiny app, we'll perform a few more processing steps on the data and set up our polygon shapefile for drawing the zip code regions on a leaflet map.
+
+We start by loading in the semi-processed crime data and then filtering out data before 2007, as upon closer inspection, the complaints from before that point seems to have been reported differently and would skew graphs we plan to show in the visualization.
+
+```{r}
+load("Data_Score_by_Time_and_Rating.rda")
+
+# Remove NAs and outliers
+score_by_time_and_rating = score_by_time_and_rating %>%
+    filter(!is.na(weight)) %>%
+    filter(month > "2006-12-31")
+```
+
+Next, we normalize the crime score by mulitplying by 10000 (to make the minimum score greater than 1), taking it's log, and then dividing by the maximum value to get an approximately normal distribution from 0 to 1.
+
+```{r}
+hist(score_by_time_and_rating$weight)
+
+score_by_time_and_rating$weight_transform = log((score_by_time_and_rating$weight)*100000)
+
+score_by_time_and_rating$weight_normalized = score_by_time_and_rating$weight_transform/max(score_by_time_and_rating$weight_transform)
+
+hist(score_by_time_and_rating$weight_normalized)
+```
+
+To display the 2015 census data for each zip code, we grab all the unique zip codes from the `score_by_time_and_rating` data frame, and their assciated demographic and economic characteristics.
+```{r}
+unique_census = score_by_time_and_rating %>%
+    group_by(zip_code) %>%
+    summarize(
+        PerCapitaIncome = PerCapitaIncome[1],
+        Unemployed = Unemployed[1],
+        TotalPop = TotalPop[1],
+        Hispanic =  Hispanic[1],
+        White = White[1],
+        Black = Black[1], 
+        Native = Native[1], 
+        Asian = Asian[1],
+        weight = weight[1]
+    )
+```
+
+```{r echo = FALSE}
+library(knitr)
+library(kableExtra)
+kable(head(unique_census, 50), caption = "<p style=\"padding-left:10px\"> **unique_census**</p>") %>%
+    kable_styling() %>%
+    scroll_box(width = "100%", height = "300px")
+```
+<br/>
+Now that we've extracted the census data, we can remove all those unecessary columns from the `score_by_time_and_rating` and reformat month column as a character to match the style of the `grouped_housing` data frame. We save this as a new data frame that we'll load into our Shiny app.
+```{r}
+crime_scores = score_by_time_and_rating %>%
+    mutate(month_char = format(as.Date(month), "%Y-%m"))%>%
+    data.frame() %>%
+    select(-c("weight","weight_transform", "sum_weight","Men", "Women", "Hispanic", "White", "Black", "Native", "Asian", "TotalPop", "PerCapitaIncome", "Unemployed"))
+
+save(crime_scores, file = "crime_scores.rda")
+```
+
+```{r echo = FALSE}
+library(knitr)
+library(kableExtra)
+kable(head(crime_scores, 50), caption = "<p style=\"padding-left:10px\"> **crime_scores**</p>") %>%
+    kable_styling() %>%
+    scroll_box(width = "100%", height = "300px")
+```
+<br/>
+
+    
+To display the neighborhood names for each zip code (if they have one), we'll pull them in from a csv file created using [information from the New York State's Department of Health](https://www.health.ny.gov/statistics/cancer/registry/appendix/neighborhoods.htm).
+
+```{r}
+neighborhoods = read_csv("neighborhoods.csv") %>%
+    mutate(zips = sapply(zips, function(x) as.list(strsplit(x," ")))) %>%
+    unnest(zips) %>%
+    add_row(zips = "00083", neighborhood = "Central Park")
+```
+
+```{r echo = FALSE}
+library(knitr)
+library(kableExtra)
+kable(head(neighborhoods, 50), caption = "<p style=\"padding-left:10px\"> **neighborhoods**</p>") %>%
+    kable_styling() %>%
+    scroll_box(width = "50%", height = "300px")
+```
+<br/>
+
+Finally, we'll load in the shapefile that contains all of the zip code polygins (with `st_read`) and merge it with the `neighborhoods` key and the 2015 census data. Before we saving it as an RDA file also we reduce the number of polygon vertices using `ms_simplify()'. This will allow for better performance of our Shiny app.
+```{r eval = FALSE}
+library(jsonlite)
+library(sf)
+
+zip_sf = st_read("https://raw.githubusercontent.com/fedhere/PUI2015_EC/master/mam1612_EC/nyc-zip-code-tabulation-areas-polygons.geojson", stringsAsFactors = FALSE) %>%
+    select(OBJECTID, postalCode, geometry) %>%
+    rename(postalcode = postalCode, shape_id = OBJECTID)
+    
+zip_sf = merge(zip_sf, unique_census, by.x="postalcode", by.y="zip_code", all.x=TRUE)
+zip_sf = merge(zip_sf, neighborhoods, by.x="postalcode", by.y="zips", all.x=TRUE)
+
+
+zip_sf = rmapshaper::ms_simplify(zip_sf, keep = 0.05, keep_shapes=TRUE)
+
+save(zip_sf, file="zip_polygons.rda")
+```
+
+## Running the App
+In this sub-section, we review the specific files that are run each time we start up an instance of out Shiny app visualization.
+
+### global.R
+
+This file is always executed before server.R and ui.R and allows us run preliminary code and create global variables used by both the server and UI. We begin the file by loading in the `tidyverse` package and creating a temporary directory where we can store the plots we'll be generating when a user clicks a particular polygon.
+
+```{r}
+library(tidyverse)
+
+# Create temp folder for popup plots and rdas
+folder <- tempfile()
+dir.create(folder)
+```
+
+Next, we set the location from where we'll be loading our rda files, as this is different depending on whether we're running it locally or on shinyapps.io (in which case the RDA files are stored on dropbox). Before pushing the app to shinyapps.io, one simply has to uncomment the commented out lines so that the app can pull from dropbox rather than just outside its local directory.
+```{r}
+rda_loc = "../"
+
+# These lines are for hosting the Shiny app on shinyapps.io
+# Leave them commented out when you're running on your local machine
+# library(rdrop2)
+# drop_auth(rdstoken = "token.rds")
+# dir_info = drop_dir("Rstudio_cloud/engm_182_project_data")
+# mapply(drop_get,
+#     path = dir_info$path_display,
+#     local_file = paste(folder,dir_info$name,sep="/"),
+#     overwrite = rep(TRUE, nrow(dir_info))
+# )
+# rda_loc = paste0(folder, "/")
+```
+
+Now that we've set their location, we can load in the RDA files. We'll also create a `unique_zips` data frame to hold popup titles for each zipcode polygon in the shapefile.
+```{r echo = FALSE}
+rda_loc = "/Users/carternoordsij/Documents/dartmouth/Academics/Class materials/engm_182/Engm182_Project/"
+```
+
+```{r warning = FALSE, message=FALSE}
+# Load data gropued by month and zip code
+load(paste0(rda_loc, "grouped_housing.rda"))
+load(paste0(rda_loc, "crime_scores.rda"))
+load(paste0(rda_loc, "zip_polygons.rda"))
+
+unique_zips = zip_sf %>% data.frame() %>%
+    select(postalcode, neighborhood) %>%
+    group_by(postalcode) %>%
+    summarize(neighborhood = neighborhood[ifelse(min(which(!is.na(neighborhood)))==Inf,1,min(which(!is.na(neighborhood))))]) %>%
+    mutate(select_names = paste0(ifelse(is.na(.data$neighborhood), "", paste0(.data$neighborhood, " - ")), .data$postalcode)) %>%
+    data.frame() %>%
+    select(-neighborhood)
+```
+
+```{r echo = FALSE}
+library(knitr)
+library(kableExtra)
+kable(head(unique_zips, 50), caption = "<p style=\"padding-left:10px\"> **unique_zips**</p>") %>%
+    kable_styling() %>%
+    scroll_box(width = "60%", height = "300px")
+```
+<br/>
+
+Next we build a list to hold the radio button choices to select which data the user wants to look at. 
+```{r}
+# Build list of radio button choice names and values
+radioButtonOptions = setNames(
+    as.list(c(colnames(grouped_housing)[-c(1:3)],colnames(crime_scores)[3])), # values
+    c( # choice names
+        "Average price per sq. ft.",
+        "Number of sales",
+        "Total proceeds from sales",
+        "Crime score"
+    )
+)
+```
+
+Finally, we create some custom CSS and HTML that will be used to fix a bug in the display positioning of the `NA` color within the leaflet legend. We found this solution in a [Github issue thread](https://github.com/rstudio/leaflet/issues/615).
+```{r warning=FALSE, message=FALSE}
+# Legend NA position fix
+library(magrittr)
+library(htmlwidgets)
+css_fix <- "div.info.legend.leaflet-control br {clear: both;}"
+html_fix <- as.character(htmltools::tags$style(type = "text/css", css_fix)) 
+```
+
+
+### server.R
+
+### ui.R

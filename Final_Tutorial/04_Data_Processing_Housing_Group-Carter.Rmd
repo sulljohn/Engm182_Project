@@ -8,24 +8,47 @@ output:
     number_sections: true
 ---
 
-See tutorial class code; we should make it a goal for the final document to look like this: https://rpubs.com/jladams/covid-shiny
 
-OR: https://rpubs.com/jladams/covid-leaflet
+## Grouping the Real Estate Data
 
-# Section 1
+Now that we have the real estate geocoded and cleaned, we can group it by aggregating all sales that took place in the same zip code and during the same month. We will create 3 new variables to describe each group: average price per square foot (`avg_price_per_sqft`), total number of sales (`num_sales`), and total proceeds from all sales (`total_proceeds`).
+```{r}
+load("cleaned_housing.rda")
 
-R-code test:
+grouped_housing_all = cleaned_df_housing %>%
+    mutate(month_char = format(as.Date(sale_date), "%Y-%m")) %>%
+    group_by(zip_code, month_char) %>%
+    summarize(
+        category = "All",
+        avg_price_per_sqft = mean(price_per_sqft),
+        num_sales = n(),
+        total_proceeds = sum(sale_price)
+    )
+```
+
+Now we will peform the same grouping function again, but with building category as an extra grouping variable. This will allow us to filter the displayed data by building category in the UI for our visualization. We combine the groups of individual categories with the groups of all categories to create a single data frame. Then We filter high-sales outliers and save this data frame for visualization in our Shiny App.
 
 ```{r}
-print("test")
+grouped_housing = cleaned_df_housing %>%
+    mutate(month_char = format(as.Date(sale_date), "%Y-%m")) %>%
+    group_by(zip_code, month_char, category) %>%
+    summarize(
+        avg_price_per_sqft = mean(price_per_sqft),
+        num_sales = n(),
+        total_proceeds = sum(sale_price)
+    ) %>%
+    bind_rows(grouped_housing_all) %>%
+    filter(total_proceeds < 200000000) %>%
+    data.frame()
+
+save(grouped_housing, file="grouped_housing.rda")
 ```
 
-# Section 2
-
-Other code test (or code that we do not want to run):
-
+```{r echo = FALSE}
+library(knitr)
+library(kableExtra)
+kable(head(grouped_housing, 50), caption = "<p style=\"padding-left:10px\"> **grouped_housing**</p>") %>%
+    kable_styling() %>%
+    scroll_box(width = "100%", height = "300px")
 ```
-System.out.println("Hello World!");
-```
 
-## Subsection 1

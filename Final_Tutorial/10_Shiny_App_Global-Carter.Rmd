@@ -8,24 +8,83 @@ output:
     number_sections: true
 ---
 
-See tutorial class code; we should make it a goal for the final document to look like this: https://rpubs.com/jladams/covid-shiny
+### global.R
 
-OR: https://rpubs.com/jladams/covid-leaflet
-
-# Section 1
-
-R-code test:
+This file is always executed before server.R and ui.R and allows us run preliminary code and create global variables used by both the server and UI. We begin the file by loading in the `tidyverse` package and creating a temporary directory where we can store the plots we'll be generating when a user clicks a particular polygon. The 
 
 ```{r}
-print("test")
+library(tidyverse)
+
+# Create temp folder for popup plots and rdas
+folder <- tempfile()
+dir.create(folder)
 ```
 
-# Section 2
+Next, we set the location from where we'll be loading our rda files, as this is different depending on whether we're running it locally or on shinyapps.io (in which case the RDA files are stored on dropbox). Before pushing the app to shinyapps.io, one simply has to uncomment the commented out lines so that the app can pull from dropbox rather than just outside its local directory.
+```{r}
+rda_loc = "../"
 
-Other code test (or code that we do not want to run):
-
+# These lines are for hosting the Shiny app on shinyapps.io
+# Leave them commented out when you're running on your local machine
+# library(rdrop2)
+# drop_auth(rdstoken = "token.rds")
+# dir_info = drop_dir("Rstudio_cloud/engm_182_project_data")
+# mapply(drop_get,
+#     path = dir_info$path_display,
+#     local_file = paste(folder,dir_info$name,sep="/"),
+#     overwrite = rep(TRUE, nrow(dir_info))
+# )
+# rda_loc = paste0(folder, "/")
 ```
-System.out.println("Hello World!");
+
+Now that we've set their location, we can load in the RDA files. We'll also create a `unique_zips` data frame to hold popup titles for each zipcode polygon in the shapefile. If the zip code has an associated neighborhood name, the titles will be formatted as "<Neigborhood Name> - <Zip Code>", but if there's no associate neighborhood name, only the zip code will be shown.
+```{r echo = FALSE}
+rda_loc = "/Users/carternoordsij/Documents/dartmouth/Academics/Class materials/engm_182/Engm182_Project/"
 ```
 
-## Subsection 1
+```{r}
+# Load data gropued by month and zip code
+load(paste0(rda_loc, "grouped_housing.rda"))
+load(paste0(rda_loc, "crime_scores.rda"))
+load(paste0(rda_loc, "zip_polygons.rda"))
+
+unique_zips = zip_sf %>% data.frame() %>%
+    select(postalcode, neighborhood) %>%
+    group_by(postalcode) %>%
+    summarize(neighborhood = neighborhood[ifelse(min(which(!is.na(neighborhood)))==Inf,1,min(which(!is.na(neighborhood))))]) %>%
+    mutate(select_names = paste0(ifelse(is.na(.data$neighborhood), "", paste0(.data$neighborhood, " - ")), .data$postalcode)) %>%
+    data.frame() %>%
+    select(-neighborhood)
+```
+
+```{r echo = FALSE}
+library(knitr)
+library(kableExtra)
+kable(head(unique_zips, 50), caption = "<p style=\"padding-left:10px\"> **neighborhoods**</p>") %>%
+    kable_styling() %>%
+    scroll_box(width = "60%", height = "300px")
+```
+<br/>
+
+Next we build a list to hold the radio button choices to select which data the user wants to look at. 
+```{r}
+# Build list of radio button choice names and values
+radioButtonOptions = setNames(
+    as.list(c(colnames(grouped_housing)[-c(1:3)],colnames(crime_scores)[3])), # values
+    c( # choice names
+        "Average price per sq. ft.",
+        "Number of sales",
+        "Total proceeds from sales",
+        "Crime score"
+    )
+)
+```
+
+Finally, we create some custom CSS and HTML that will be used to fix a bug in the display positioning of the `NA` color within the leaflet legend. We found this solution in a [Github issue thread](https://github.com/rstudio/leaflet/issues/615).
+```{r}
+# Legend NA position fix
+library(magrittr)
+library(htmlwidgets)
+css_fix <- "div.info.legend.leaflet-control br {clear: both;}"
+html_fix <- as.character(htmltools::tags$style(type = "text/css", css_fix)) 
+```

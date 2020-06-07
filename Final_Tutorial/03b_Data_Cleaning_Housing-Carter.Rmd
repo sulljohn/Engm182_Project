@@ -7,25 +7,110 @@ output:
   html_document:
     number_sections: true
 ---
-
-See tutorial class code; we should make it a goal for the final document to look like this: https://rpubs.com/jladams/covid-shiny
-
-OR: https://rpubs.com/jladams/covid-leaflet
-
-# Section 1
-
-R-code test:
-
-```{r}
-print("test")
+```{r include = FALSE}
+library (tidyverse)
+knitr::opts_knit$set(root.dir = "/Users/carternoordsij/Documents/dartmouth/Academics/Class materials/engm_182/Engm182_Project", warning=FALSE, message=FALSE)
 ```
 
-# Section 2
 
-Other code test (or code that we do not want to run):
+## Reverse Geocoding and Cleaning the Housing Data
 
+Because it's difficult to draw meaningful conlusions from individual data points, we decided to group the housing and crime data by zip code and month. The ~250 zip code areas in NYC would give us enough granularity to see the how the myriad of different regions in New York City differ from one another over time, but also enough courseness to ensure that there were typically multiple entries average across for each group, and to guarantee acceptable response times of our visualization app.
+
+In order to group the real estate data by zip code, we first need to attach a zip code value to each entry in our data. To do this, we use the [Geoclient API](https://developer.cityofnewyork.us/api/geoclient-api) available on the city's [Developer Portal](https://developer.cityofnewyork.us). Before pulling from the API, we do some quick cleaning by converting the `borough`, `sale_price`, and `gross_square_feet` columns to the `numeric` data type (to make sure they're not incorrectly stored as `character` or `factor` types). Then we filter out some of the data with bad `sale_price` and `gross_square_feet` values, as this makes for fewer API queries and we know we won't want use those entries in our analysis anyway. The last step before pulling from the API is creating the `bbl` column, which is a 10 digit combination of the `borough`, `block`, and `lot` columns. We will pass each entry's `bbl` number to the API, which will then return the zip code (among other data) for that specific plot of land.
+
+```{r eval = FALSE}
+library(tidyverse)
+
+load("Data_Housing.rda")
+
+# Convert chr variables to numerics
+df_housing$borough = as.numeric(df_housing$borough)
+df_housing$sale_price = as.numeric(df_housing$sale_price)
+df_housing$gross_square_feet = as.numeric(df_housing$gross_square_feet)
+
+# Get only data with valid sale prices and square footages
+# Build borough-block-lot (BBL) ID for reverse geocoding
+df_housing = df_housing %>%
+  filter(sale_price > 0) %>%
+  filter(gross_square_feet > 1) %>%
+  mutate(bbl = borough * 1e9 + block * 1e4 + lot)
 ```
-System.out.println("Hello World!");
+
+A nifty CRAN package appropriately titled [`geoclient`](https://rdrr.io/github/austensen/geoclient/man/geoclient-package.html) allows us to pull data from the Geoclient API in just a single line of code. However, because the API is public and free, the rate of requests from a single account is limited and it took ~7 hours to query all 1.4 mllion properties. After the queries are complete, we bind the returned API data to the existing `df_housing` data frame in a new data frame called `geocoded_df_housing`.
+
+```{r eval = FALSE}
+library(geoclient)
+
+# Query the API
+bbl_df = geo_bbl(df_housing$bbl, id = APPLICATION_ID, key = API_KEY)
+
+# Join the existing data with the API data
+geocoded_df_housing = bind_cols(df_housing, bbl_df)
 ```
 
-## Subsection 1
+In the next step, we modify data from a CSV file with all NYC building class codes to include a column labeling the building category of each class code (e.g., Residential, Commercial, Industrial, etc.).
+
+```{r, message=FALSE, warning=FALSE}
+building_class_key = read_csv("BUILDING_CLASS.csv") %>%
+  group_by(BUILDING_CODE_ID) %>%
+  summarize(category = str_to_title(TYPE[1])) %>%
+  rename(class_code = BUILDING_CODE_ID) %>%
+  mutate(category = case_when(
+    substring(class_code, 1,1) %in% c("A","B","C","D","R") ~ "Residential",
+    substring(class_code, 1,1) %in% c("S") ~ "Mixed",
+    substring(class_code, 1,1) %in% c("H","K","L","O") ~ "Commercial",
+    substring(class_code, 1,1) %in% c("E","F","G","T","U") ~ "Industrial",
+    substring(class_code, 1,1) %in% c("V") ~ "Vacant",
+    substring(class_code, 1,1) %in% c("I","J","M","N","P","Q","W") ~ "Civic",
+    substring(class_code, 1,1) %in% c("Y") ~ "Government",
+    substring(class_code, 1,1) %in% c("Z") ~ "Other"
+  ))
+```
+
+```{r echo = FALSE, message = FALSE, warning = FALSE}
+library(knitr)
+library(kableExtra)
+
+kable(building_class_key, caption = "<p style=\"padding-left:10px\"> **building_class_key**</p>") %>%
+    kable_styling() %>%
+    scroll_box(width = "30%", height = "300px")
+```
+<br/>
+Now we select the columns from `geocoded_df_housing` that we want to work with moving forward, filter out missing values and high/low-priced outliers, and use the building class codes to assign a category to each building sale. This is all stored and saved new data frame called `cleaned_df_housing`, which we will use for grouping in the next section.
+
+```{r, eval = FALSE}
+cleaned_df_housing = geocoded_df_housing %>%
+  select(
+    building_class_at_present,
+    zip_code,
+    gross_square_feet,
+    sale_price,
+    sale_date,
+  ) %>%
+  rename(lat = latitudeInternalLabel) %>%
+  rename(lng = longitudeInternalLabel) %>%
+  filter(!(is.na(lat) | is.na(lng))) %>%
+  filter(!(is.na(zip_code) | zip_code == 0)) %>%
+  filter(!(is.na(sale_price))) %>%
+  filter(!(is.na(gross_square_feet) | gross_square_feet <= 0)) %>%
+  mutate(price_per_sqft = sale_price/gross_square_feet) %>%
+  filter(price_per_sqft <= 2500) %>%
+  filter(price_per_sqft > 20) %>%
+  mutate(zip_code = sapply(zip_code, as.character)) %>%
+  left_join(building_class_key,  by = c("building_class_at_present" = "class_code"))
+
+save(cleaned_df_housing, file="cleaned_housing.rda")
+```
+
+```{r echo = FALSE, message = FALSE, warning = FALSE}
+library(knitr)
+library(kableExtra)
+load("cleaned_housing.rda")
+kable(head(cleaned_df_housing), caption = "<p style=\"padding-left:10px\"> **cleaned_df_housing**</p>") %>%
+    kable_styling() %>%
+    column_spec(5, width_min = "90px") %>%
+    scroll_box(width = "100%", height = "300px")
+```
+
+<br/>
