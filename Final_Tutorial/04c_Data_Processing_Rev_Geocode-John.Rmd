@@ -8,9 +8,9 @@ output:
     number_sections: true
 ---
 
-# Converting coordinates to zip codes
+# Converting coordinates to zipcodes
 
-There was difficulty with initally processing the location data into a format for analysis. For the crime and census data:
+There was difficulty with initially processing the location data into a format for analysis. For the crime and census data:
 
 * Crime data - complaints were initially recorded with only a latitude and longitude
 * Census data - the census data used census tracts for identifying locations
@@ -21,7 +21,7 @@ At first, an API was used to convert the coordinates from the crime data to zip 
 
 Instead, it was chosen to perform the reverse geocoding locally, as to avoid having to make requests to an API service for each zip code. Further, since the zip codes were limited to only New York, it was possible to only download the location data for this area.
 
-## Sources for latitude and longitude to zipcode code and datta
+## Sources for latitude and longitude to zipcode code and data
 
 The source for the code to retrieve the zipcodes from latitude and longitude coordinates locally is: https://stackoverflow.com/questions/46267287/reverse-geocoding-speed
 
@@ -29,13 +29,13 @@ The source for the geospatial polygon data to process the coordinates is: https:
 
 ## Processing the crime data
 
-First the crime data is read in:
+First, the crime data is read in:
 
 ```{r eval=FALSE}
 sf <- sf::st_read("nyc_zip_code_tabulation_areas_polygons.geojson")
 ```
 
-Then the desired latitude and longitude fields are taken. the complaint number is also taken so that the crime-zipcode datat can be joined again later. The NA values are omitted.
+Then the desired latitude and longitude fields are taken. the complaint number is also taken so that the crime-zipcode data can be joined again later. The NA values are omitted.
 
 ```{r eval=FALSE}
 CMPLNT_NUM <- c(df_crime$CMPLNT_NUM)
@@ -54,7 +54,7 @@ As stated in the sourced guide above for reverse geocoding this data, "To perfor
 st_crs(sf_x) <- st_crs(sf)
 ```
 
-The coordinates are processed with the st_witthin function and put into an output using sapply:
+The coordinates are processed with the st_within function and put into an output using sapply:
 
 ```{r eval=FALSE}
 res <- st_within(sf_x, sf)
@@ -108,7 +108,7 @@ save(nyc_tracts, file='Data_NYC_Tracts.rda')
 zip_population <- subset(nyc_tracts, select = c(CensusTract,zip_code,TotalPop, Men, Women, Hispanic, White, Black, Native, Asian, IncomePerCap, Unemployment))
 ```
 
-The most important element was the corresponding populations for each zipcode. The population data for each demographic was summed accross each zipcode. The demogrpahic information was initially stored as percents, so it was necessary to multiply those percents by the total population for each census tract.
+The most important element was the corresponding populations for each zipcode. The population data for each demographic was summed across each zipcode. The demographic information was initially stored as percentages, so it was necessary to multiply those percentages by the total population for each census tract.
 
 ```{r eval=FALSE}
 #Converting the demographic and unemployment percentages to numbers and income per capita to income
@@ -135,7 +135,7 @@ zip_population$IncomeTot <- zip_population$IncomeTot/zip_population$TotalPop
 zip_population$Unemployment.number <- zip_population$Unemployment.number*100/(0.65*zip_population$TotalPop)
 ```
 
-Finally, the columns were renamed as needed. The data for zipcode to population demographic was saved for analylsis later:
+Finally, the columns were renamed as needed. The data for zipcode to population demographic was saved for analysis later:
 
 ```{r eval=FALSE}
 #Renaming the column headers
@@ -144,6 +144,6 @@ colnames(zip_population) <- c("zip_code", "TotalPop", "Men", "Women", "Hispanic"
 save(zip_population, file = "Data_Zip_Population.rda")
 ```
 
-## Source for census tract to zipccode data
+## Source for census tract to zipccode mapping data
 
-The folllowing link includes thte updated census tract to zipcode information: https://www.huduser.gov/portal/datasets/usps_crosswalk.html
+The following link includes the updated census tract to zipcode information: https://www.huduser.gov/portal/datasets/usps_crosswalk.html

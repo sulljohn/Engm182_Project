@@ -22,7 +22,7 @@ Each of the issues can be respectively addressed:
 2. The can be partitioned and the accuracy prediction can be analyzed (MSE)
 3. Machine learning models can be used to capture data granularity (see machine learning code section)
 
-## Code to setup and run regressions no combined crime data
+## Code to setup and run regressions on combined crime data
 
 The steps for setting up the regression, running the model, and making predictions are in the following sections.
 
@@ -35,9 +35,9 @@ The desired data is loaded into R for the regression.
 load(file = "Data_sale_census_crime.rda")
 ```
 
-### Variable selecion
+### Variable selection
 
-The desired independent and dependent (sale_price) variables are selecte with the code below and certain parameters are set to limit the amount of data.
+The desired independent and dependent (sale_price) variables are selected with the code below and certain parameters are set to limit the amount of data.
 
 ```{r eval=FALSE}
 # Make sure sale prices are numeric
@@ -116,7 +116,7 @@ fit1 <- fastLm(x_train, y_train)
 
 ### Summarize results
 
-The results are summarized for analylsis.
+The results are summarized for analysis.
 
 ```{r eval=FALSE}
 summary(fit1)
@@ -148,7 +148,7 @@ The results are summarized:
 | Root Mean Squared (RMS)        | 198,239.1 |
 | Root Mean Squared Error (RMSE) | 43.59%    |
 
-The more detailed output from the regression model is summarized:
+The more detailed output from the regression model is summarized below. While it may be possible to improve the regression results by running further regressions, the machine learning models explored next will likely help to capture the granularity in the data.
 
 ```
 > # Run regression
