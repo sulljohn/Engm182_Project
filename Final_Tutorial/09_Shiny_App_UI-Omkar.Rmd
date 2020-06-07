@@ -8,26 +8,25 @@ output:
     number_sections: true
 ---
 
-
-
 # User Interface
 
-User interface is the user facing side of the Shiny application. It contains various display elements such as titlePanel, sidebarLayout, radioButtons, tabPanel etc. Following steps show how we step-wise buit up code for UI.
+User interface is the user facing side of the Shiny application.It contains various display elements such as titlePanel, sidebarLayout, radioButtons, tabPanel etc. Following steps show how we step-wise buit up code for UI.
 
-#### Importing necessary libraries
+## Importing necessary libraries
 
-```
+``` {r eval = FALSE}
+
 library(shiny)
 library(leaflet)
 library(shinyWidgets)
 ```
+ 
+## Creating basic layout of UI and display elements
 
-#### Creating display elements
+Now that we have imported libraries, we start adding code inside fluidPage to create display elements.  We'll have user inputs in the sidebarPanel. We'll add those in later steps. Final code of ui script is given in the end.
 
-Now that we have imported libraries, we start adding code inside fluidpage to create display elements. 'titlePanel' gives the heading, mainPanel
+``` {r eval = FALSE}
 
-```
-# Define UI for application that draws a histogram
 shinyUI(fluidPage(
     HTML(html_fix),
     titlePanel("NYC Real Estate and Crime"),
@@ -45,24 +44,165 @@ shinyUI(fluidPage(
 ))
 ```   
 
+## Creating display elements in sidebarLayout
 
+Now we'll start coding inside sidebarLayout to create display elements. We created 2 tabs, first tab for the attribute we want to see at a chosen time. sliderTextInput allows us to choose a specific time. radioButtons links to radioButtonOptions in Global.R file. It allows us to choose the attribute of the data we want to see. conditionalPanel shows real esate based on the "property type" we have chosen from the drop down list. 
 
+``` {r eval = FALSE}
+
+    titlePanel("NYC Real Estate and Crime"),
+    sidebarLayout(
+        sidebarPanel(
+            tabsetPanel(
+                tabPanel(
+                    "Map Controls",
+                    HTML("<br/>"),
+                    sliderTextInput(
+                        inputId = "date_select",
+                        label="Month",
+                        choices = sort(unique(c(unique(crime_scores$month_char),unique(grouped_housing$month_char)))),
+                        animate=TRUE,
+                        selected="2020-03"
+                    ),
+                    radioButtons(
+                        inputId = "data_select",
+                        label = "Mapped Data",
+                        radioButtonOptions # set up in global.R
+                    ),
+                    conditionalPanel(
+                        condition = "output.housing_data_select == true",
+                        selectInput(
+                            inputId = "prop_category",
+                            label = "Property Category",
+                            choices = sort(unique(grouped_housing$category))
+                        )
+                    )
+                )
+```
+## Predictive model inputs
+
+Now we create second tab for the predictive model integration in the app. We build radioButtons to choose between models. Price predictor takes 4 inputs to compute the price. Clicking on the actionButton shows predicted price.
+
+``` {r eval = FALSE}
+
+          tabPanel(
+                    "Price Predictor",
+                    HTML("<br/>"),
+                    numericInput("age", "Building age (years):", 50, min=1800, max = 2030),
+                    numericInput("sqft", "Square footage:", 2000, min=0, max = 1000000),
+                    numericInput("sale_year", "Sale Year:", 2010, min=1950, max = 2030),
+                    selectizeInput("zip", "Location:",
+                        selected = NULL,
+                        choices = unique_zips$select_names,
+                        options = list(
+                            placeholder = "Search by Neighborhood or Zip Code",
+                            onInitialize = I('function() { this.setValue(""); }')
+                        )
+                    ),
+                    radioButtons(
+                        "model_select",
+                        label="Predictive Model:",
+                        choiceNames = c(
+                            # "Bagged cart",
+                            "Neural net",
+                            "Random forest"
+                        ),
+                        choiceValues = c(
+                            # "fit.bgcrt", 
+                            "fit.nnet",
+                            "fit.rf"
+                        )
+                    ),
+                    actionButton("predict_price", label = "Compute Price"),
+                    HTML("<hr/><b>Predicted Price: </b>"),
+                    htmlOutput("price")
+                )
+                
+```
+## Final code of ui.R
+
+``` {r eval = FALSE}
+
+library(shiny)
+library(leaflet)
+library(shinyWidgets)
+
+# Define UI for application that draws a histogram
+shinyUI(fluidPage(
+    HTML(html_fix),
+    titlePanel("NYC Real Estate and Crime"),
+    sidebarLayout(
+        sidebarPanel(
+            tabsetPanel(
+                tabPanel(
+                    "Map Controls",
+                    HTML("<br/>"),
+                    sliderTextInput(
+                        inputId = "date_select",
+                        label="Month",
+                        choices = sort(unique(c(unique(crime_scores$month_char),unique(grouped_housing$month_char)))),
+                        animate=TRUE,
+                        selected="2020-03"
+                    ),
+                    radioButtons(
+                        inputId = "data_select",
+                        label = "Mapped Data",
+                        radioButtonOptions # set up in global.R
+                    ),
+                    conditionalPanel(
+                        condition = "output.housing_data_select == true",
+                        selectInput(
+                            inputId = "prop_category",
+                            label = "Property Category",
+                            choices = sort(unique(grouped_housing$category))
+                        )
+                    )
+                ),
+                tabPanel(
+                    "Price Predictor",
+                    HTML("<br/>"),
+                    numericInput("age", "Building age (years):", 50, min=1800, max = 2030),
+                    numericInput("sqft", "Square footage:", 2000, min=0, max = 1000000),
+                    numericInput("sale_year", "Sale Year:", 2010, min=1950, max = 2030),
+                    selectizeInput("zip", "Location:",
+                        selected = NULL,
+                        choices = unique_zips$select_names,
+                        options = list(
+                            placeholder = "Search by Neighborhood or Zip Code",
+                            onInitialize = I('function() { this.setValue(""); }')
+                        )
+                    ),
+                    radioButtons(
+                        "model_select",
+                        label="Predictive Model:",
+                        choiceNames = c(
+                            # "Bagged cart",
+                            "Neural net",
+                            "Random forest"
+                        ),
+                        choiceValues = c(
+                            # "fit.bgcrt", 
+                            "fit.nnet",
+                            "fit.rf"
+                        )
+                    ),
+                    actionButton("predict_price", label = "Compute Price"),
+                    HTML("<hr/><b>Predicted Price: </b>"),
+                    htmlOutput("price")
+                )
+            )
+        ),
+        mainPanel(
+            leafletOutput(
+                "map",
+                width="100%",
+                height="90vh"
+            )
+        ),
+        position="left"
+    )
+))
+    
 
 
 ```
-print("test")
-
-```
-```
-```
-
-
-# Section 2
-
-Other code test (or code that we do not want to run):
-
-```
-System.out.println("Hello World!");
-```
-
-## Subsection 1

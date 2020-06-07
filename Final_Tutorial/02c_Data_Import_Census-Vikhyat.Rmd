@@ -8,13 +8,10 @@ output:
     number_sections: true
 ---
 
-# Setup Instructions
+# Downloading the census block data
+The United States census bureau data estimates for 2015 were downloaded for all 2,167 individual NYC census tracts. This data was in two parts. The first part which included the block code/census tract, its latitude and longitude as well as the name of the county and state was imported throug the following code. After getting them in a dataframe (block_loc), the rows with 'NA' were removed. A basic 'unique value check' showed us that there were 38,936 locations in 20,406 blocks in 15 counties. These longitude and latitude locations would help us later when we classified the demographic data by zip code.
 
-Download data from Google Drive / code from GitHub
-
-The following code reads the data in and gets unique values:
-
-```
+```{r eval = FALSE}
 #Code for census data
 block_loc <- read.csv("../Data/Census_2015/census_block_loc.csv")
 head(block_loc)
@@ -33,10 +30,10 @@ unique_county <- unique(block_loc$County)
 unique_block <- unique(block_loc$BlockCode)
 #There are 38,936 locations in 20,406 blocks which are in 15 counties in NJ and NY in the data
 ```
+<br/>
+We divided this dataframe into different counties in NY and NJ to get a better sense about the data. This gave us information about the number of locations in each of the counties in our data. 
 
-Our goal was to look at each county separately. The rest of this code divides it into separate datatframes:
-
-```
+```{r eval = FALSE}
 #Splitting dataframes into different states and then different counties
 library(dplyr)
 block_loc_NY <- filter(block_loc, State == "NY")
@@ -61,7 +58,11 @@ block_loc_Essex <- filter(block_loc, County == "Essex") #3302 locations
 block_loc_Bergen <- filter(block_loc, County == "Bergen") #3456 locations
 block_loc_Passaic <- filter(block_loc, County == "Passaic") #1539 locations
 block_loc_Morris <- filter(block_loc, County == "Morris") #29 locations
-
+```
+<br/>
+# Downloading the 2nd part NYC census tracts data
+The second part of the census data was the NYC census tracts data. This was also split into different dataframes which contained data about sex, race, income, jobs, commute and employment, albeit these dataframes were not used separately for analysis in the future. 
+```{r eval = FALSE}
 #importing nyc census tracts file
 nyc_tracts <- read.csv("../Data/Census_2015/nyc_census_tracts.csv")
 head(nyc_tracts)
@@ -74,4 +75,4 @@ nyc_tracts_jobs <- select(nyc_tracts, CensusTract, County, Borough, TotalPop, Ci
 nyc_tracts_commute <- select(nyc_tracts, CensusTract, County, Borough, TotalPop, Citizen, Drive, Carpool, Transit, Walk, OtherTransp, WorkAtHome, MeanCommute) #Percentage of different ways that people use for commuting. Don't know MeanCommute, maybe it is the percentage of people commuting every day
 nyc_tracts_employment <- select(nyc_tracts, CensusTract, County, Borough, TotalPop, Citizen, Employed, PrivateWork, PublicWork, SelfEmployed, FamilyWork, Unemployment)#Percentage of different kinds of employment
 ```
-
+<br/>
