@@ -73,7 +73,7 @@ shinyServer(function(input, output) {
 
 ## Mapping the reactive data and adding legend
 
-Now, we add a color palette. Using reverse geocoding, we map the reactive data based on the ZIP code as per the attribute chosen by the user on radioButton and time chosen on sliderInput. We also highlight the ZIP code areas for mouse hover.
+Now, we add a color palette. Using reverse geocoding, we map the reactive data based on the ZIP code as per the attribute chosen by the user with radioButton and time chosen on sliderInput. We also highlight the ZIP code areas for mouse hover.
 
 ```{r eval = FALSE}
     
@@ -282,15 +282,18 @@ In this step, we integrate the predictive models in the shiny app. It takes 4 in
         }
     })
 
+output$price = renderText({
+        price_text()
+    })
 
 ```
+## Choice of attribute
+
+housing_data_select takes a boolean value of either TRUE or FALSE depending on whether the attribute chosen by the user is within the choices provided.
 
 ```{r eval = FALSE}
+
 outputOptions(output, "housing_data_select", suspendWhenHidden = FALSE)
-
-```
-
-```{r eval = FALSE}
     
     output$housing_data_select = reactive({
         return(housing_data_select())
@@ -305,11 +308,10 @@ outputOptions(output, "housing_data_select", suspendWhenHidden = FALSE)
     })
    
     
-    output$price = renderText({
-        price_text()
-    })
 ```
 ## Final code of server.R
+
+Now we combine all chunks of code that we saw in steps so far inside the shinyServer function. This is the final script for server.R. This script along with ui.R and Global.R runs the shiny app.
 
 ``` {r eval = FALSE}
 

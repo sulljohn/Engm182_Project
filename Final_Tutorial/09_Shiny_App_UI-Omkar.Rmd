@@ -121,6 +121,8 @@ Now we create second tab for the predictive model integration in the app. We bui
 ```
 ## Final code of ui.R
 
+Now we combine all chunks of code that we saw in steps so far inside the shinyUI function. This is the final script for ui.R. This script along with server.R and Global.R runs the shiny app.
+
 ``` {r eval = FALSE}
 
 library(shiny)

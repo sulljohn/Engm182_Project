@@ -12,34 +12,34 @@ output:
 
 ## Challenges faced
 
-### Selecting relevant variables
+* Selecting relevant variables
 
-Many factors go into predicting the housing prices. So it's difficult to select a set of variables from the data available.
+    Many factors go into predicting the housing prices. So it's difficult to select a set of variables from the data available.
 
-### Cleaning the data
+*  Cleaning the data
 
-Cleaning the raw data is an important step. Often, the data collected is not in the required shape so a lot wrangling has to be done before it's ready for further processing.
+    Cleaning the raw data is an important step. Often, the data collected is not in the required shape so a lot wrangling has to be done before it's ready for further processing.
 
-### Missing data
+*  Missing data
 
-There were many data points that were missing. We couldn't do much about them. There are many ways to deal with missing data. However, they were not within the scope of the project. Grey areas seen on the map are due to these missing data points.
+    There were many data points that were missing. We couldn't do much about them. There are many ways to deal with missing data. However, they were not within the scope of the project. Grey areas seen on the map are due to these missing data points.
 
-### Computing power limitations
-We experienced computing power limitations while working with machine learning models. In future, these models can be run with better computing.
+*  Computing power limitations
+    We experienced computing power limitations while working with machine learning models. In future, these models can be run with better computing.
 
 ## What we learned
 
-### Data cleaning takes time
+* Data cleaning takes time
 
-Cleaning and preparing the data into required form is an important step and can be time consuming. Often, it takes more time to clean and prepare the date than processing it.
+    Cleaning and preparing the data into required form is an important step and can be time consuming. Often, it takes more time to clean and prepare the date than processing it.
 
-### Higher computing or APIs needed to run the models
+* Higher computing or APIs needed to run the models
 
-To run the machine learning models, higher computing power would be useful. Othewise, using some API package like rcpp the code could be executed faster.
+    To run the machine learning models, higher computing power would be useful. Othewise, using some API package like rcpp the code could be executed faster.
 
 
-### Lost insights due to missing data
-We may have missed out on many insights due to missing data. There was nothing much we could do about this. In future,  missing data could be handled better.
+* Lost insights due to missing data
+    We may have missed out on many insights due to missing data. There was nothing much we could do about this. In future,  missing data could be handled better.
 
 
 
