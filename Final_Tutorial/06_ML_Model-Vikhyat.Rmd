@@ -7,25 +7,323 @@ output:
   html_document:
     number_sections: true
 ---
+# Preparing the dataframe for Machine Learning models
+Add the required libraries. Also, load the file Data_sale_census_crime.rda (df_sale_census_crime) that was created in "04D: Data_Processing_Single_Dataframe".
 
-See tutorial class code; we should make it a goal for the final document to look like this: https://rpubs.com/jladams/covid-shiny
+```{r eval=FALSE}
+#Attach packages
+library(caret)
+library(dplyr)
+library(lubridate)
+library(deepnet)
 
-OR: https://rpubs.com/jladams/covid-leaflet
+load(file = "Data_sale_census_crime.rda")
+```
+<br/>
+Remove rows that have zero value in any column. Also, make sure that the sale_price column is numeric.
+```{r eval=FALSE}
+#Remove values of 0
+#source: https://stackoverflow.com/questions/9977686/how-to-remove-rows-with-any-zero-value
+zero_rows = apply(df_sale_census_crime, 1, function(row) all(row != 0))
+df_sale_census_crime <- df_sale_census_crime[zero_rows, ]
 
-# Section 1
+# Make sure sale prices are numeric
+df_sale_census_crime$sale_price <- as.numeric(df_sale_census_crime$sale_price)
+```
+<br/>
+Instead of looking at the entire data we will look at sale_price < $ 1M and 5M (90% and 97% of the data respectively). This value can be changed through this line of code.
+```{r eval=FALSE}
+source: https://stackoverflow.com/questions/25764810/delete-rows-based-on-range-of-values-in-column
+df_sale_census_crime <- df_sale_census_crime[with(df_sale_census_crime, sale_price <= 5000000), ]
+```
+<br/>
+Instead of using the year_built of a house as an input variable, create another column, "age" of the building. This is calculated as below. Also, remember to remove all zero rows again.
+```{r eval=FALSE}
+#Adding a column about age of building 
+df_sale_census_crime$age <- df_sale_census_crime$sale_year - df_sale_census_crime$year_built
+#Remove negative age values
+df_sale_census_crime <- df_sale_census_crime[age>0, ]
 
-R-code test:
-
-```{r}
-print("test")
+#Remove values of 0
+#source: https://stackoverflow.com/questions/9977686/how-to-remove-rows-with-any-zero-value
+zero_rows = apply(df_sale_census_crime, 1, function(row) all(row != 0))
+df_sale_census_crime <- df_sale_census_crime[zero_rows, ]
+```
+<br/>
+Instead of using the entire database, use 1% of the data for trial run. This can be incrementally increased to 20% and then 100% of the data.
+```{r eval=FALSE}
+setup_stage <- sort(sample(nrow(df_sale_census_crime), nrow(df_sale_census_crime)*.01))
+df_sale_census_crime <- df_sale_census_crime[setup_stage]
+```
+<br/>
+Make sure that gross_square_feet is numeric and all NA values are removed from the dataframe.
+```{r eval=FALSE}
+df_sale_census_crime$gross_square_feet <- as.numeric(df_sale_census_crime$gross_square_feet)
+sapply(df_sale_census_crime, class)
+df_sale_census_crime <- na.omit(df_sale_census_crime)
+any(is.na(df_sale_census_crime))
 ```
 
-# Section 2
+# Splitting the data into training and test data
+Select data of sales from 2003 to 2013 for training and data from beyond 2013 for testing. Variable y is defined to include just the sale_price; variable y_test is the testing component of y. Variable is a matrix of all the input variables for the models; variable x_test is the testing component of x. Make sure that all the variables are formatted in the right format and all NA rows are removed before proceeding.
+```{r eval=FALSE}
+summary(df_sale_census_crime)
+# select sales from 2003 to 2013 for validation and >2013 for testing
+df_sale_census_crime_test <- df_sale_census_crime[sale_year > 2013,]
+# use data from 2003 to 2013 as training data
+df_sale_census_crime_train <- df_sale_census_crime[sale_year <= 2013,]
 
-Other code test (or code that we do not want to run):
+# Data setup
 
+# Setup the y output variable
+y <- df_sale_census_crime_train %>% select("sale_price")
+y <- as.numeric(y[[1]]) # Making sure it's numeric
+y_test <- df_sale_census_crime_test %>% select("sale_price")
+
+# Setup the input variable
+x <- df_sale_census_crime_train %>% select("gross_square_feet","PerCapitaIncome", "Unemployed", "TotalPop.x", "Hispanic", "White", "Black", "Native", "Asian", "age", "weight", "sale_year")
+x_test <- df_sale_census_crime_test %>% select("gross_square_feet","PerCapitaIncome", "Unemployed", "TotalPop.x", "Hispanic", "White", "Black", "Native", "Asian", "age", "weight", "sale_year")
+# NEED to make sure each column is the right format (numeric / factor as appropriate)
+
+# BEFORE
+sapply(x, class)
+
+x$gross_square_feet <- as.numeric(x$gross_square_feet)
+x$sale_year <- as.numeric(x$sale_year)
+
+# AFTER (CHECK that these all make sense)
+sapply(x, class)
+
+#Same for x_test
+sapply(x_test, class)
+x_test$sale_year <- as.numeric(x_test$sale_year)
+any(is.na(x_test))
 ```
-System.out.println("Hello World!");
+
+# Running the ML models
+Set the control method of the model as cross validation (cv) or none. It is advisable to do 5-fold or 10-fold cross validation. Cross validation takes a much longer time to run then just running without any cross calidation. Root Mean Square (RMSE) is being used here as the parameter to optimize the models. Mean Average Error (MAE) can also be used instead.
+```{r eval=FALSE}
+# Source: https://machinelearningmastery.com/k-fold-cross-validation/
+control <- trainControl(method="cv", number=10)
+metric <- "RMSE"
+```
+<br/>
+Run the neural network, deep neural net, random forest, bagged cart and k-nearest neighbours models as shown below. 
+```{r eval=FALSE}
+# Neural Network model
+set.seed(7)
+fit.nnet <- train(x, y, method="nnet", metric=metric, trControl=control, linout=TRUE, preProcess="pca") # Need linout TRUE: https://stackoverflow.com/questions/21622975/how-to-model-a-neural-network-through-the-use-of-caret-r
+
+# Deep Neural Net
+set.seed(7)
+fit.dnn <- train(x, y, output="linear", metric=metric, trControl=control, linout=TRUE, preProcess="pca") # Need linout TRUE: https://stackoverflow.com/questions/21622975/how-to-model-a-neural-network-through-the-use-of-caret-r
+
+# Random Forest
+set.seed(7)
+fit.rf <- train(x, y, method="rf", metric=metric, trControl=control, preProcess="pca")
+
+#Trees using genetic algorithm- This is taking extremely long amounts of time so aborting this model
+#set.seed(7)   
+#fit.ga <- train(x, y, method="evtree", metric=metric, trControl=control, preProcess="pca")
+
+#Adaptive- Network based fuzzy inference system-This is taking extremely long amounts of time so aborting this model
+#install.packages("frbs")
+#library(frbs)
+#set.seed(7)   
+#fit.anfis <- train(x, y, method="ANFIS", metric=metric, trControl=control, preProcess="pca")
+
+#Bagged CART
+set.seed(7)   
+fit.bgcrt <- train(x, y, method="treebag", metric=metric, trControl=control, preProcess="pca")
+
+#KNN
+set.seed(7)   
+fit.knn <- train(x, y, method="knn", metric=metric, trControl=control, preProcess="pca")
 ```
 
-## Subsection 1
+# Results of validation and training
+Let's see how our models performed in 5-fold cross validation with 1% data (sale_price < 1M), 1% data (sale_price < 5M) and 100% data (sale_price < 1M, only for neural network and bagged cart).
+```{r eval=FALSE}
+results <- resamples(list(nnet=fit.nnet, dnn=fit.dnn, rf=fit.rf, cart=fit.bgcrt, knn=fit.knn))
+summary(results)
+```
+
+```{r comment='', echo=FALSE, results='asis'}
+metric <- c("RMSE", "MAE", "R-squared")
+neural_net1 <- c(525659.6, 280704.9, 0.067)
+deep_neural_net1 <- c(410711.8, 214190.9, 0.422)
+random_forest1 <- c(405804.9, 213700.3, 0.442)
+bagged_cart1 <- c(437638, 241710.5, 0.35)
+k_nearest_neighbors1 <- c(444834.5, 227947.2, 0.334)
+
+Validation_results_0.01_5M <- data.frame(metric, neural_net1, deep_neural_net1, random_forest1, bagged_cart1, k_nearest_neighbors1)
+#source: https://stackoverflow.com/questions/32821741/printing-data-frames-in-r-markdown
+knitr::kable(Validation_results_0.01_5M, caption = "Validation results of 1% data with sale_price <5M", floating.environment="sidewaystable")
+
+neural_net2 <- c(211077.4, 164014.6, 0.107)
+deep_neural_net2 <- c(193911.1, 142400.7, 0.256)
+random_forest2 <- c(193911.1, 142400.7, 0.256)
+bagged_cart2 <- c(200277.8, 151958, 0.196)
+k_nearest_neighbors2 <- c(194873.8, 144403.9, 0.25)
+
+Validation_results_0.01_1M <- data.frame(metric, neural_net2, deep_neural_net2, random_forest2, bagged_cart2, k_nearest_neighbors2)
+
+#source: https://stackoverflow.com/questions/32821741/printing-data-frames-in-r-markdown
+knitr::kable(Validation_results_0.01_1M, caption = "Validation results of 1% data with sale_price <1M", floating.environment="sidewaystable")
+
+neural_net3 <- c(208134.7, 161860.4, 0.097)
+bagged_cart3 <- c(200819.9, 154242.5, 0.159)
+
+Validation_results_1_1M <- data.frame(metric, neural_net3, bagged_cart3)
+
+#source: https://stackoverflow.com/questions/32821741/printing-data-frames-in-r-markdown
+knitr::kable(Validation_results_1_1M, caption = "Validation results of 100% data with sale_price <1M", floating.environment="sidewaystable")
+
+#source: https://www.r-graph-gallery.com/48-grouped-barplot-with-ggplot2.html
+library(ggplot2)
+#Creating a grouped plot1
+models1 <- c(rep("neural_net" , 2) , rep("deep_neural_net" , 2) , rep("random_forest" , 2) , rep("bagged_cart" , 2), rep("k_nearest_neighbor", 2) )
+condition1 <- rep(c("RMSE" , "MAE") , 5)
+metrics1 <- c(neural_net1[1:2], deep_neural_net1[1:2], random_forest1[1:2], bagged_cart1[1:2], k_nearest_neighbors1[1:2])
+data1 <- data.frame(models1,condition1,metrics1)
+
+ggplot(data1, aes(fill=condition1, y= metrics1, x=models1)) + 
+    geom_bar(position="dodge", stat="identity") + ggtitle("Validation results of 1% data with sale_price <5M")
+
+#Creating a grouped plot2
+models2 <- c(rep("neural_net" , 2) , rep("deep_neural_net" , 2) , rep("random_forest" , 2) , rep("bagged_cart" , 2), rep("k_nearest_neighbor", 2) )
+condition2 <- rep(c("RMSE" , "MAE") , 5)
+metrics2 <- c(neural_net2[1:2], deep_neural_net2[1:2], random_forest2[1:2], bagged_cart2[1:2], k_nearest_neighbors2[1:2])
+data2 <- data.frame(models2,condition2,metrics2)
+
+ggplot(data2, aes(fill=condition2, y= metrics2, x=models2)) + 
+    geom_bar(position="dodge", stat="identity") + ggtitle("Validation results of 1% data with sale_price <1M")
+
+#Creating a grouped plot3
+models3 <- c(rep("neural_net" , 2), rep("bagged_cart" , 2))
+condition3 <- rep(c("RMSE" , "MAE") , 2)
+metrics3 <- c(neural_net3[1:2], bagged_cart3[1:2])
+data3 <- data.frame(models3,condition3,metrics3)
+
+ggplot(data3, aes(fill=condition3, y= metrics3, x=models3)) + 
+    geom_bar(position="dodge", stat="identity") + ggtitle("Validation results of 100% data with sale_price <1M")
+```
+
+# Results of predictions on testing data 
+Run the models on the x_test dataset to get the predicted sales price value. 
+```{r eval=FALSE}
+# compare the predictions
+nnet_pred <- predict(fit.nnet, x_test) 
+dnn_pred <- predict(fit.dnn, x_test)
+rf_pred <- predict(fit.rf, x_test)
+bgcrt_pred <- predict(fit.bgcrt, x_test)
+knn_pred <- predict(fit.knn, x_test)
+```
+<br/>
+Find the difference between the predicted values and the y_test values and calculate the RMSE and MAE values as shown below.
+```{r eval=FALSE}
+results3 <- data.frame(cbind(y_test, nnet_pred, dnn_pred, rf_pred, bgcrt_pred, knn_pred))
+#RMSE on test data for each model
+#Calculating diff from actual values
+results3$diff_nnet <- abs(results3$sale_price - results3$nnet_pred)
+results3$diff_dnn <- abs(results3$sale_price - results3$dnn_pred)
+results3$diff_rf <- abs(results3$sale_price - results3$rf_pred)
+results3$diff_bgcrt <- abs(results3$sale_price - results3$bgcrt_pred)
+results3$diff_knn <- abs(results3$sale_price - results3$knn_pred)
+
+#Calculating RMSE
+RMSE_nnet <- sqrt(mean('^'(results3$diff_nnet,2))) #705,330
+RMSE_dnn <- sqrt(mean('^'(results3$diff_dnn,2))) #697,094
+RMSE_rf <- sqrt(mean('^'(results3$diff_rf,2))) #689,789
+RMSE_bgcrt <- sqrt(mean('^'(results3$diff_bgcrt,2))) #634,809
+RMSE_knn <- sqrt(mean('^'(results3$diff_knn,2))) #641,702
+
+#Calculating MAE
+MAE_nnet <- mean(results3$diff_nnet) #401,590
+MAE_dnn <- mean(results3$diff_dnn) #466,828
+MAE_rf <- mean(results3$diff_rf) #462,907
+MAE_bgcrt <- mean(results3$diff_bgcrt) #401,397
+MAE_knn <- mean(results3$diff_knn) #363,609
+```
+<br/>
+Calculate the MAE %error and RMSE %error by dividing the MAE and RMSE values by mean sales price in y_test. This gives a figure which can be easily compared across models. Let's see what the results are.
+```{r eval=FALSE}
+#Calculating %error (RMSE/Average price)
+error_nnet <- RMSE_nnet/mean(results3$sale_price) 
+error_dnn <- RMSE_dnn/mean(results3$sale_price) 
+error_rf <- RMSE_rf/mean(results3$sale_price) 
+error_bgcrt <- RMSE_bgcrt/mean(results3$sale_price) 
+error_knn <- RMSE_knn/mean(results3$sale_price) 
+
+#Calculating %error (MAE/Average price)
+error2_nnet <- MAE_nnet/mean(results3$sale_price) 
+error2_dnn <- MAE_dnn/mean(results3$sale_price) 
+error2_rf <- MAE_rf/mean(results3$sale_price) 
+error2_bgcrt <- MAE_bgcrt/mean(results3$sale_price) 
+error2_knn <- MAE_knn/mean(results3$sale_price) 
+```
+
+```{r comment='', echo=FALSE, results='asis'}
+metric4 <- c("RMSE/mean", "MAE/mean")
+neural_net4 <- c(0.92, 0.53)
+deep_neural_net4 <- c(0.91, 0.61)
+random_forest4 <- c(0.90, 0.61)
+bagged_cart4 <- c(0.83, 0.53)
+k_nearest_neighbors4 <- c(0.84, 0.48)
+
+Testing_results_0.01_5M <- data.frame(metric4, neural_net4, deep_neural_net4, random_forest4, bagged_cart4, k_nearest_neighbors4)
+#source: https://stackoverflow.com/questions/32821741/printing-data-frames-in-r-markdown
+knitr::kable(Testing_results_0.01_5M, caption = "Testing results of 1% data with sale_price <5M", floating.environment="sidewaystable")
+
+neural_net5 <- c(0.50, 0.39)
+deep_neural_net5 <- c(0.47, 0.37)
+random_forest5 <- c(0.47, 0.37)
+bagged_cart5 <- c(0.47, 0.37)
+k_nearest_neighbors5 <- c(0.50, 0.39)
+
+Testing_results_0.01_1M <- data.frame(metric4, neural_net5, deep_neural_net5, random_forest5, bagged_cart5, k_nearest_neighbors5)
+
+#source: https://stackoverflow.com/questions/32821741/printing-data-frames-in-r-markdown
+knitr::kable(Testing_results_0.01_5M, caption = "Testing results of 1% data with sale_price <1M", floating.environment="sidewaystable")
+
+neural_net6 <- c(0.49, 0.40)
+deep_neural_net6 <- c(0.46, 0.37)
+random_forest6 <- c(0.46, 0.37)
+bagged_cart6 <- c(0.49, 0.39)
+
+Testing_results_1_0.2_1M <- data.frame(metric4, neural_net6, deep_neural_net6, random_forest6, bagged_cart6)
+
+#source: https://stackoverflow.com/questions/32821741/printing-data-frames-in-r-markdown
+knitr::kable(Testing_results_1_0.2_1M, caption = "Testing results of 100% (for neural_net & bagged_cart) data and 20% (for deep neural net & random forest and no cross validation) with sale_price <1M", floating.environment="sidewaystable")
+
+#source: https://www.r-graph-gallery.com/48-grouped-barplot-with-ggplot2.html
+library(ggplot2)
+#Creating a grouped plot1
+models4 <- c(rep("neural_net" , 2) , rep("deep_neural_net" , 2) , rep("random_forest" , 2) , rep("bagged_cart" , 2), rep("k_nearest_neighbor", 2) )
+condition4 <- rep(c("RMSE/mean" , "MAE/mean") , 5)
+metrics4 <- c(neural_net4, deep_neural_net4, random_forest4, bagged_cart4, k_nearest_neighbors4)
+data4 <- data.frame(models4,condition4,metrics4)
+
+ggplot(data4, aes(fill=condition4, y= metrics4, x=models4)) + 
+    geom_bar(position="dodge", stat="identity") + ggtitle("Testing results of 1% data with sale_price <5M")
+
+#Creating a grouped plot2
+models5 <- c(rep("neural_net" , 2) , rep("deep_neural_net" , 2) , rep("random_forest" , 2) , rep("bagged_cart" , 2), rep("k_nearest_neighbor", 2) )
+condition5 <- rep(c("RMSE/mean" , "MAE/mean") , 5)
+metrics5 <- c(neural_net5, deep_neural_net5, random_forest5, bagged_cart5, k_nearest_neighbors5)
+data5 <- data.frame(models5,condition5,metrics5)
+
+ggplot(data5, aes(fill=condition5, y= metrics5, x=models5)) + 
+    geom_bar(position="dodge", stat="identity") + ggtitle("Testing results of 1% data with sale_price <1M")
+
+#Creating a grouped plot3
+models6 <- c(rep("neural_net" , 2) , rep("deep_neural_net" , 2) , rep("random_forest" , 2) , rep("bagged_cart" , 2) )
+condition6 <- rep(c("RMSE/mean" , "MAE/mean") , 4)
+metrics6 <- c(neural_net6, deep_neural_net6, random_forest6, bagged_cart6)
+data6 <- data.frame(models6,condition6,metrics6)
+
+ggplot(data6, aes(fill=condition6, y= metrics6, x=models6)) + 
+    geom_bar(position="dodge", stat="identity") + ggtitle("Testing results of 100% (for neural_net & bagged_cart) data and 20% (for deep neural net & random forest and no cross validation) with sale_price <1M")
+```
+<br/>
+As we can see, the model improves a lot when we only look at sale_prices < $ 1M. The final %MAE errors were in the range of 35-40% with the random forest and deep neural net performing the best.
