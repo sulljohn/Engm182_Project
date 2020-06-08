@@ -32,6 +32,15 @@ unique_block <- unique(block_loc$BlockCode)
 #There are 38,936 locations in 20,406 blocks which are in 15 counties in NJ and NY in the data
 ```
 <br/>
+The dataframe looks like this:
+```{r echo = FALSE, include= FALSE}
+library(knitr)
+library(kableExtra)
+kable(head(block_loc))%>%
+    kable_styling()%>%
+    scroll_box(width = "100%", height = "300px")
+```
+<br/>
 We divide this dataframe into different counties in NY and NJ to get a better sense about the data. This gives us information about the number of locations in each of the counties in our data. 
 
 ```{r eval = FALSE}
@@ -77,3 +86,11 @@ nyc_tracts_commute <- select(nyc_tracts, CensusTract, County, Borough, TotalPop,
 nyc_tracts_employment <- select(nyc_tracts, CensusTract, County, Borough, TotalPop, Citizen, Employed, PrivateWork, PublicWork, SelfEmployed, FamilyWork, Unemployment)#Percentage of different kinds of employment
 ```
 <br/>
+The second dataframe looks like this:
+```{r echo = FALSE, include= FALSE}
+library(knitr)
+library(kableExtra)
+kable(head(nyc_tracts))%>%
+    kable_styling()%>%
+    scroll_box(width = "100%", height = "300px")
+```
