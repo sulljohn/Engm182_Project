@@ -7,25 +7,5 @@ output:
   html_document:
     number_sections: true
 ---
-
-See tutorial class code; we should make it a goal for the final document to look like this: https://rpubs.com/jladams/covid-shiny
-
-OR: https://rpubs.com/jladams/covid-leaflet
-
-# Section 1
-
-R-code test:
-
-```{r}
-print("test")
-```
-
-# Section 2
-
-Other code test (or code that we do not want to run):
-
-```
-System.out.println("Hello World!");
-```
-
-## Subsection 1
+<br/>
+After importing the census data in section "02C: Data_Import_Census", no more data cleaning is required as the data was organized into a usable format there itself and the NA values were removed.
