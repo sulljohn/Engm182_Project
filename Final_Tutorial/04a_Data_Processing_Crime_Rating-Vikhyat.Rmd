@@ -8,7 +8,7 @@ output:
     number_sections: true
 ---
 # Adding zipcode to each criminal activity
-The df_crime dataframe that contains data about all the crimes committed was first of all purged of all NA rows in the latitude and longitude columns. Then by reverse geocoding, the latitude and longitude values were mapped to a zip code in the following way.
+The df_crime dataframe that contains data about all the crimes committed is first of all purged of all NA rows in the latitude and longitude columns. Then by reverse geocoding, the latitude and longitude values are mapped to a zip code in the following way.
 
 ```{r eval = FALSE}
 # These should be taken care of with the higher level Import_All.R:
@@ -33,7 +33,7 @@ res <- lapply(seq(nrow(location)), function(i){
 ```
 
 # Assigning weights to each crime
-Every crime was assigned a weight based on the degree of severity. A violation which includes minor offenses like speeding ticket, public intoxication etc. was assigned a weight of 1. A misdemeanour which can include a simple assault or driving under influence was assigned a wight of 2. These were easy to identify as the LAW_CAT_CD column in df_crime gives the category of the crime (Violation, Misdemeanour or Felony)
+Assign a weight to every crime based on the degree of severity. A violation which includes minor offenses like speeding ticket, public intoxication etc. is assigned a weight of 1. A misdemeanour which can include a simple assault or driving under influence is assigned a wight of 2. These were easy to identify as the LAW_CAT_CD column in df_crime gives the category of the crime (Violation, Misdemeanour or Felony).
 
 ```{r eval = FALSE}
 #Assigning weights to each crime
@@ -47,14 +47,10 @@ df_crime2$weight[which(df_crime2$LAW_CAT_CD=="VIOLATION")]=1
 df_crime2$weight[which(df_crime2$LAW_CAT_CD=="MISDEMEANOR")]=2
 ```
 <br/>
-Assigning weights to felonies was a little more tricky. Since, felonies include a vast variety of criminal activity, we decided to first divide them into 4 categories, 1st to 4th degree as shown in the code below. From the OFNS_DESC column a list of unique keyword was generated which was grouped into 4 lists pertaining to the type of felonies. 
+Assigning weights to felonies is a little more tricky. Since, felonies include a vast variety of criminal activity, we decided to first divide them into 4 categories, 1st to 4th degree. First-degree felonyincludes murder, rape, kidnapping, arson and fraud. Second-degree felony includes aggravated assault, felony assault, arson, manslaughter, possession of a controlled substance and child molestation. Third-degree felony includes assault and battery, elder abuse, transmission of pornography, driving under the influence, fraud and arson. Finally, fourth-degree felony includes involuntary manslaughter, burglary, larceny and resisting arrest. (These lists are just examples and not exhaustive and are based on a source: https://legaldictionary.net/felony/) From the OFNS_DESC column generate a list of unique keywords and group them into 4 lists pertaining to the type of feloniy. Then, the crime is assigned a weight of 6, 5, 4 or 3 for felonies of 1st degree, 2nd degree, 3rd degree and 4th degree respectively depending on which category the OFNS_DESC column of that crime suggests.
 ```{r eval = FALSE}
 #Felonies are the most serious of offenses and will be sub-classified
 #Common law and statutes in most states divide felonies into first through fourth degree felonies, each carrying decreasing penalties
-#First-degree felony: murder, rape, kidnapping, arson, fraud
-#Second-degree felony: aggravated assault, felony assault, arson, manslaughter, possession of a controlled substance, child molestation
-#Third-degree felony: assault and battery, elder abuse, transmission of pornography, driving under the influence, fraud, arson
-#Fourth-degree felony: involuntary manslaughter, burglary, larceny, resisting arrest
 #source: https://legaldictionary.net/felony/
 
 df_crime2_felony <- subset(df_crime2, df_crime2$LAW_CAT_CD=="FELONY")
@@ -77,4 +73,3 @@ df_crime3 <- subset(df_crime2, select = c(CMPLNT_FR_DT, OFNS_DESC, LAW_CAT_CD, L
 head(df_crime3)
 ```
 
-## Subsection 1
