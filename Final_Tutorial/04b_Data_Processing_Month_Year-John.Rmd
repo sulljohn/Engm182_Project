@@ -10,7 +10,7 @@ output:
 
 # Group crime information by month, year, and zipcode
 
-First, the relevant datafiles are imported to the environment and the packages are loaded:
+First, the relevant datafiles are imported into the environment and the packages are loaded:
 
 ```{r eval=FALSE}
 library(lubridate)
@@ -19,7 +19,7 @@ load(file = "Data_Crime_w_Zipcodes.rda")
 load(file = "Data_Zip_Population.rda")
 ```
 
-For analysis, it is helpful to have the events grouped by month and year, then by a given zipcode. Then, a field like the crime score can be aggregated an normalized for this criteria. In this case, the crime data is formatted in the desired way with the following command:
+For analysis, it is helpful to have the events grouped by month, year, and zipcode. Then, a field like the crime score can be aggregated and normalized for this criterion. In this case, the crime data is formatted in the desired way with the following command:
 
 ```{r eval=FALSE}
 score_by_time_and_rating <- df_crime %>% group_by(month=floor_date(CMPLNT_FR_DT, "month"), zip_code)  %>% summarize(summary_variable=sum(weight))
@@ -29,7 +29,7 @@ Source: https://stackoverflow.com/questions/33221425/how-do-i-group-my-date-vari
 
 ## Group other fields by time and zipcode
 
-In addition, commands were run to normalize the crime score by the total population and only take data greater than the year 2000. There was extraneous data for crimes hundreds of years in the past and 2000 was chosen as a good baseline. It also appeared that the reporting method for these crimes changes in 2006, as evidenced by a dramatic change in the crime scores at this time.
+In addition, commands are run to normalize the crime score by the total population and only take data greater than the year 2000. There are extraneous entries in the data for crimes hundreds of years ago and 2000 is a good baseline. It also appears that the reporting method for these crimes changes in 2006, as evidenced by a dramatic change in crime scores at this time.
 
 ```{r class.source = NULL, eval = FALSE}
 # Summing the scores

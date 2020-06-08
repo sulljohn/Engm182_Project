@@ -10,16 +10,16 @@ output:
 
 # Regression model
 
-The regression model helps to establish a baseline. Unfortunately when working with a large set of data, there are issues faced when running regressions:
+The regression model helps to establish a baseline. Unfortunately, when working with a large set of data, there are issues faced when running regressions:
 
-1. Large dataset - it took a long time to run the regression
+1. Large dataset - it takes a long time to run the regression
 2. P-values - they go to zero quickly (they all became significant)
-3. Mean-squared error (MSE) - the mean square errors of the predicted values were high, despite the amount of data
+3. Mean-squared error (MSE) - the mean square errors of the predicted values are high, despite the amount of data
 
 Each of the issues can be respectively addressed:
 
 1. A function called fastLm removes overhead from the regression
-2. The can be partitioned and the accuracy prediction can be analyzed (MSE)
+2. The data can be partitioned, and the accuracy prediction can be analyzed (MSE)
 3. Machine learning models can be used to capture data granularity (see machine learning code section)
 
 ## Code to setup and run regressions on combined crime data
@@ -62,7 +62,7 @@ y <- df_sale_census_crime %>% select("sale_price")
 
 ### Variable coercion
 
-The variables are coerced into the proper type for the regression (e.g. factor variable).
+The variables are coerced into the proper types for the regression (e.g. factor variable).
 
 ```{r eval=FALSE}
 x$land_square_feet <- as.numeric(x[[1]])
@@ -97,9 +97,9 @@ sapply(x, class)
 sapply(y, class)
 ```
 
-### Partition data
+### Partition the data
 
-The data is partitioned into training and test sets for regression the data and determining the accuracy of a model on the test set respectively. For this initial regression analysis, a subset of 80% of the data is used for training and the rest is used for testing the accuracy of the predictions.
+The data is partitioned into training and test sets for running regressions and determining the accuracy of a model on the test set respectively. For this initial regression analysis, a subset of 80% of the data is used for training and the rest is used for testing the accuracy of the predictions.
 
 ```{r eval=FALSE}
 # ----- Split data into training and validation sets ----- 
@@ -113,7 +113,7 @@ x_train <- x[validation_index,]
 y_train <- y[validation_index]
 ```
 
-### Run regression
+### Run the regression using fastLm
 
 The regression is run using fastLm to expedite the process and remove the overhead from the normal regression functions.
 
@@ -148,16 +148,18 @@ rms_error
 
 ## Results from the regression models
 
-The results are summarized:
+The results that were found when the regression was run for this project are summarized:
 
-| Measure                        | Value     |
-|--------------------------------|-----------|
-| Adjusted R-squared value (R^2) | 27.26%    |
-| Root Mean Squared (RMS)        | 198,239.1 |
-| Root Mean Squared Error (RMSE) | 43.59%    |
+| Measure                          | Value     |
+|----------------------------------|-----------|
+| Adjusted R-squared value ($R^2$) | 27.26%    |
+| Root Mean Squared (RMS)          | 198,239.1 |
+| Root Mean Squared Error (RMSE)   | 43.59%    |
 
 The more detailed output from the regression model is summarized below. While it may be possible to improve the regression results by running further regressions, the machine learning models explored next will likely help to capture the granularity in the data.
 
+<details>
+<summary>Regression output</summary>
 ```
 > # Run regression
 > fit1 <- fastLm(x_train, y_train)
@@ -396,3 +398,4 @@ Multiple R-squared: 0.2733,	Adjusted R-squared: 0.2726
 > rms_error
 [1] 0.4358773
 ```
+</details>
