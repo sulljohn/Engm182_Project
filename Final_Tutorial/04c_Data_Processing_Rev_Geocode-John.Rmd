@@ -8,7 +8,7 @@ output:
     number_sections: true
 ---
 
-# Converting coordinates to zipcodes
+## Converting coordinates to zipcodes
 
 There was difficulty with initially processing the location data into a format for analysis. For the crime and census data:
 
@@ -21,13 +21,13 @@ At first, an API was used to convert the coordinates from the crime data to zip 
 
 Instead, it was chosen to perform the reverse geocoding locally and avoid having to make requests to an API service for each zip code. Further, since the zip codes are limited to only New York, it was possible to only download the location data for this area. In this section, the same method will be applied to extract the zipcodes.
 
-## Sources for latitude and longitude to zipcode code and data
+### Sources for latitude and longitude to zipcode code and data
 
 The source for the code to retrieve the zipcodes from latitude and longitude coordinates locally is: https://stackoverflow.com/questions/46267287/reverse-geocoding-speed
 
 The source for the geospatial polygon data to process the coordinates is: https://jsspina.carto.com/tables/nyc_zip_code_tabulation_areas_polygons/public/map
 
-## Processing the crime data
+### Processing the crime data
 
 First, the packages are loaded:
 
@@ -97,7 +97,7 @@ df_crime$geometry<-NULL
 save(df_crime, file='Data_Crime_w_Zipcodes.rda')
 ```
 
-## Processing the census data
+### Processing the census data
 
 First, the packages are loaded:
 
@@ -161,6 +161,6 @@ colnames(zip_population) <- c("zip_code", "TotalPop", "Men", "Women", "Hispanic"
 save(zip_population, file = "Data_Zip_Population.rda")
 ```
 
-## Source for census tract to zipccode mapping data
+### Source for census tract to zipccode mapping data
 
 The following site includes the most up to date census tract to zipcode information: https://www.huduser.gov/portal/datasets/usps_crosswalk.html

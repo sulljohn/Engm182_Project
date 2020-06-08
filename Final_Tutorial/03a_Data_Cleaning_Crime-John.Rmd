@@ -8,6 +8,6 @@ output:
     number_sections: true
 ---
 
-# Cleaning crime data
+## Cleaning crime data
 
 Generally, the crime data is cleaned as part of the other sections. When the crime scores are taken to classify the crimes and these scores are summed across zipcodes, crimes that could not be classified into defined categories are excluded. While excluding NAs could introduce bias, it is believed that the effect would be consistent across time and population for the analysis. However, it did appear that there was a difference in the reporting for crime scores after 2006, which was accounted for when representing the data visually.

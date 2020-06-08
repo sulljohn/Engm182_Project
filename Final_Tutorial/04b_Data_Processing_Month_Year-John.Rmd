@@ -8,7 +8,7 @@ output:
     number_sections: true
 ---
 
-# Group crime information by month, year, and zipcode
+## Group crime information by month, year, and zipcode
 
 First, the relevant datafiles are imported into the environment and the packages are loaded:
 
@@ -27,7 +27,7 @@ score_by_time_and_rating <- df_crime %>% group_by(month=floor_date(CMPLNT_FR_DT,
 
 Source: https://stackoverflow.com/questions/33221425/how-do-i-group-my-date-variable-into-month-year-in-r
 
-## Group other fields by time and zipcode
+### Group other fields by time and zipcode
 
 In addition, commands are run to normalize the crime score by the total population and only take data greater than the year 2000. There are extraneous entries in the data for crimes hundreds of years ago and 2000 is a good baseline. It also appears that the reporting method for these crimes changes in 2006, as evidenced by a dramatic change in crime scores at this time.
 
