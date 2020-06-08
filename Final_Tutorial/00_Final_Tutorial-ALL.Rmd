@@ -51,7 +51,20 @@ all_files = c(
     list.files(path="../Data/RE_Apr2019-Mar2020", pattern="*.xls", full.names=TRUE, recursive=FALSE)
 )
 ```
+## Importing crime data
 
+### Loading tidyverse package
+``` {r eval = FALSE}
+library(tidyverse)
+
+```
+### Reading crime data
+
+We use read.csv instead of read_csv to get a data.frame instead of tibble, which is more useful when doing analysis in other programs
+
+``` {r eval = FALSE}
+df_crime <- read_csv("../Data/Crimes_2006-2017/NYPD_Complaint_Data_Historic.csv")
+```
 Next, we create a custom function to pass to `lapply()` that will import the data from each file into a dataframe, and store all those dataframes into a corresponding list called `dfs_list`. Although all the data across every file were consistently formatted with the same column headers, frustratingly, they did not always start on the same row (but always started on one of the first 10 rows). Because of this, we had to do two reads of each file—an initial read of the first 10 rows and columns just to find the index of the first column header (titled "BOROUGH" in our case), and a second read to actually import the data starting from that index. [This stack overflow post](https://stackoverflow.com/questions/43242467/reading-excel-in-r-how-to-find-the-start-cell-in-messy-spreadsheets?rq=1) was very helpful in setting up this 'double-read' functionality. We also use `clean_names()` from the `janitor` package to make the column names easier to work with later on.
 ```{r eval = FALSE}
 library(tidyverse)
@@ -1830,9 +1843,9 @@ shinyUI(fluidPage(
 
 
 ```
-### Conclusion and next steps
+# Conclusion and next steps
 
-#### Challenges faced
+## Challenges faced
 
 * Selecting relevant variables
 
@@ -1849,7 +1862,7 @@ shinyUI(fluidPage(
 *  Computing power limitations
     We experienced computing power limitations while working with machine learning models. In future, these models can be run with better computing.
 
-#### What we learned
+## What we learned
 
 * Data cleaning takes time
 
