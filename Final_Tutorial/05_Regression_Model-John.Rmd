@@ -8,7 +8,7 @@ output:
     number_sections: true
 ---
 
-## Regression model
+# Regression Modeling
 
 The regression model helps to establish a baseline. Unfortunately, when working with a large set of data, there are issues faced when running regressions:
 
@@ -22,11 +22,11 @@ Each of the issues can be respectively addressed:
 2. The data can be partitioned, and the accuracy prediction can be analyzed (MSE)
 3. Machine learning models can be used to capture data granularity (see machine learning code section)
 
-### Code to setup and run regressions on combined crime data
+## Code to setup and run regressions on combined crime data
 
 The steps for setting up the regression, running the model, and making predictions are in the following sections.
 
-#### Load packages and import data
+### Load packages and import data
 
 First, the packages are loaded:
 
@@ -43,7 +43,7 @@ The desired data is imported into R for the regression.
 load(file = "Data_sale_census_crime.rda")
 ```
 
-#### Variable selection
+### Variable selection
 
 The desired independent and dependent (sale_price) variables are selected with the code below and certain parameters are set to limit the amount of data.
 
@@ -60,7 +60,7 @@ x <- df_sale_census_crime %>% select("land_square_feet", "PerCapitaIncome", "Une
 y <- df_sale_census_crime %>% select("sale_price")
 ```
 
-#### Variable coercion
+### Variable coercion
 
 The variables are coerced into the proper types for the regression (e.g. factor variable).
 
@@ -97,7 +97,7 @@ sapply(x, class)
 sapply(y, class)
 ```
 
-#### Partition the data
+### Partition the data
 
 The data is partitioned into training and test sets for running regressions and determining the accuracy of a model on the test set respectively. For this initial regression analysis, a subset of 80% of the data is used for training and the rest is used for testing the accuracy of the predictions.
 
@@ -113,7 +113,7 @@ x_train <- x[validation_index,]
 y_train <- y[validation_index]
 ```
 
-#### Run the regression using fastLm
+### Run the regression using fastLm
 
 The regression is run using fastLm to expedite the process and remove the overhead from the normal regression functions.
 
@@ -122,7 +122,7 @@ The regression is run using fastLm to expedite the process and remove the overhe
 fit1 <- fastLm(x_train, y_train)
 ```
 
-#### Summarize results
+### Summarize results
 
 The results are summarized for analysis.
 
@@ -146,7 +146,7 @@ rms_error = rms/mean(results$y_test)
 rms_error
 ```
 
-### Results from the regression models
+## Results from the regression models
 
 The results that were found when the regression was run for this project are summarized:
 
