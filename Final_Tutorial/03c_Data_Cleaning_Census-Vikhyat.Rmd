@@ -7,5 +7,6 @@ output:
   html_document:
     number_sections: true
 ---
+# Cleaning the census data
 <br/>
 After importing the census data in section "02C: Data_Import_Census", no more data cleaning is required as the data was organized into a usable format there itself and the NA values were removed.
