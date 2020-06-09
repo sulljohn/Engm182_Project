@@ -8,15 +8,15 @@ rda_loc = "../"
 
 # These lines are for hosting the Shiny app on shinyapps.io
 # Leave them commented out when you're running on your local machine
-# library(rdrop2)
-# drop_auth(rdstoken = "token.rds")
-# dir_info = drop_dir("Rstudio_cloud/engm_182_project_data")
-# mapply(drop_get,
-#     path = dir_info$path_display,
-#     local_file = paste(folder,dir_info$name,sep="/"),
-#     overwrite = rep(TRUE, nrow(dir_info))
-# )
-# rda_loc = paste0(folder, "/")
+library(rdrop2)
+drop_auth(rdstoken = "token.rds")
+dir_info = drop_dir("Rstudio_cloud/engm_182_project_data")
+mapply(drop_get,
+    path = dir_info$path_display,
+    local_file = paste(folder,dir_info$name,sep="/"),
+    overwrite = rep(TRUE, nrow(dir_info))
+)
+rda_loc = paste0(folder, "/")
 
 # Load data gropued by month and zip code
 load(paste0(rda_loc, "grouped_housing.rda"))

@@ -11,12 +11,13 @@ output:
     toc: true
     toc_float: true
 ---
+<base target="_top"/>
 
 ```{r include = FALSE}
 library(tidyverse)
-knitr::opts_knit$set(root.dir = "..")
+knitr::opts_knit$set(root.dir = "..", warning = FALSE, message = FALSE)
+knitr::opts_chunk$set(warning = FALSE, message = FALSE)
 ```
-
 # Background
 
 This tutorial page describes the final project we conducted for Professor Geoffrey Parker's Spring 2020 Data Analytics course (ENGM 182) at Dartmouth College's Thayer School of Engineering. The goal of the project was to create a compelling and approachable a visualization of historical NYC real estate sales and crime data, and an accompanying model for predicting the price of a hypothetical real estate sale.
@@ -51,20 +52,7 @@ all_files = c(
     list.files(path="../Data/RE_Apr2019-Mar2020", pattern="*.xls", full.names=TRUE, recursive=FALSE)
 )
 ```
-## Importing crime data
 
-### Loading tidyverse package
-``` {r eval = FALSE}
-library(tidyverse)
-
-```
-### Reading crime data
-
-We use read.csv instead of read_csv to get a data.frame instead of tibble, which is more useful when doing analysis in other programs
-
-``` {r eval = FALSE}
-df_crime <- read_csv("../Data/Crimes_2006-2017/NYPD_Complaint_Data_Historic.csv")
-```
 Next, we create a custom function to pass to `lapply()` that will import the data from each file into a dataframe, and store all those dataframes into a corresponding list called `dfs_list`. Although all the data across every file were consistently formatted with the same column headers, frustratingly, they did not always start on the same row (but always started on one of the first 10 rows). Because of this, we had to do two reads of each file—an initial read of the first 10 rows and columns just to find the index of the first column header (titled "BOROUGH" in our case), and a second read to actually import the data starting from that index. [This stack overflow post](https://stackoverflow.com/questions/43242467/reading-excel-in-r-how-to-find-the-start-cell-in-messy-spreadsheets?rq=1) was very helpful in setting up this 'double-read' functionality. We also use `clean_names()` from the `janitor` package to make the column names easier to work with later on.
 ```{r eval = FALSE}
 library(tidyverse)
@@ -124,13 +112,188 @@ kable(head(df_housing, 50), caption = "<p style=\"padding-left:10px\"> **df_hous
     scroll_box(width = "100%", height = "300px")
 ```
 
+## Importing crime data
+
+### Loading tidyverse package
+``` {r eval = FALSE}
+library(tidyverse)
+
+```
+### Reading crime data
+
+We use read.csv instead of read_csv to get a data.frame instead of tibble, which is more useful when doing analysis in other programs
+
+``` {r eval = FALSE}
+df_crime <- read_csv("../Data/Crimes_2006-2017/NYPD_Complaint_Data_Historic.csv")
+```
+
+## Importing the Census Data
+### Downloading the census block data
+Download the United States census bureau data estimates for 2015 for all 2,167 individual NYC census tracts.
+This data is in two parts. Import the first part which includes the block code/census tract, its latitude and longitude as well as the name of the county and state through the following code. After getting them in a dataframe (block_loc), remove the rows with 'NA'. A basic 'unique value check' shows that there are 38,936 locations in 20,406 blocks in 15 counties. These longitude and latitude locations would help us later when we classify the demographic data by zip code.
+
+```{r}
+#Code for census data
+block_loc <- read.csv("../Data/Census_2015/census_block_loc.csv")
+
+#This data frame has 5 columns (Latitude, longitude and block code for a block as well as its county and state) and 38,396 rows
+
+
+#Checking if there are any missing or infinite 
+missing_val = any(is.na(block_loc))
+#There are no missing values in the dataframe
+
+#Checking for unique values 
+unique_state <- unique(block_loc$State)
+unique_county <- unique(block_loc$County)
+unique_block <- unique(block_loc$BlockCode)
+#There are 38,936 locations in 20,406 blocks which are in 15 counties in NJ and NY in the data
+```
+<br/>
+The dataframe looks like this:
+```{r echo = FALSE}
+library(knitr)
+library(kableExtra)
+kable(head(block_loc)) %>%
+    kable_styling() %>%
+    scroll_box(width = "100%", height = "300px")
+```
+<br/>
+We divide this dataframe into different counties in NY and NJ to get a better sense about the data. This gives us information about the number of locations in each of the counties in our data. 
+
+```{r eval = FALSE}
+#Splitting dataframes into different states and then different counties
+library(dplyr)
+block_loc_NY <- filter(block_loc, State == "NY")
+#This has 24,240 locations
+block_loc_NJ <- filter(block_loc, State == "NJ")
+#This has 14,156 locations
+unique(block_loc_NY$County)
+block_loc_Richmond <- filter(block_loc, County == "Richmond") #3933 locations
+block_loc_Queens <- filter(block_loc, County == "Queens") #6872 locations
+block_loc_Nassau <- filter(block_loc, County == "Nassau") #4906 locations
+block_loc_Kings <- filter(block_loc, County == "Kings") #3729 locations
+block_loc_NewYork <- filter(block_loc, County == "New York") #1295 locations
+block_loc_Bronx <- filter(block_loc, County == "Bronx") #2224 locations
+block_loc_Westchester <- filter(block_loc, County == "Westchester") #1281 locations
+
+unique(block_loc_NJ$County)
+block_loc_Middlesex <- filter(block_loc, County == "Middlesex") #760 locations
+block_loc_Monmouth <- filter(block_loc, County == "Monmouth") #1117 locations
+block_loc_Union<- filter(block_loc, County == "Union") #1553 locations
+block_loc_Hudson <- filter(block_loc, County == "Hudson") #2400 locations
+block_loc_Essex <- filter(block_loc, County == "Essex") #3302 locations
+block_loc_Bergen <- filter(block_loc, County == "Bergen") #3456 locations
+block_loc_Passaic <- filter(block_loc, County == "Passaic") #1539 locations
+block_loc_Morris <- filter(block_loc, County == "Morris") #29 locations
+```
+<br/>
+
+### Downloading the 2nd part NYC census tracts data
+
+The second part of the census data is the NYC census tracts data which is imported below. This is also split into different dataframes which contained data about sex, race, income, jobs, commute and employment, albeit these dataframes will not be used separately for analysis in the future. 
+```{r}
+#importing nyc census tracts file
+nyc_tracts <- read.csv("../Data/Census_2015/nyc_census_tracts.csv")
+
+#Splitting this into different dataframes
+nyc_tracts_sex <- select(nyc_tracts, CensusTract, County, Borough, TotalPop, Men, Women) #Actual number of men and women in population
+nyc_tracts_race <- select(nyc_tracts, CensusTract, County, Borough, TotalPop, Hispanic, White, Black, Native, Asian) #Percentage of different race in population
+nyc_tracts_income <- select(nyc_tracts, CensusTract, County, Borough, TotalPop, Citizen, Professional, Service, Office, Construction, Production) #Percentage of different jobs
+nyc_tracts_jobs <- select(nyc_tracts, CensusTract, County, Borough, TotalPop, Citizen, Income, IncomeErr, IncomePerCap, IncomePerCapErr, Poverty, ChildPoverty) #Income and Poverty data
+nyc_tracts_commute <- select(nyc_tracts, CensusTract, County, Borough, TotalPop, Citizen, Drive, Carpool, Transit, Walk, OtherTransp, WorkAtHome, MeanCommute) #Percentage of different ways that people use for commuting. Don't know MeanCommute, maybe it is the percentage of people commuting every day
+nyc_tracts_employment <- select(nyc_tracts, CensusTract, County, Borough, TotalPop, Citizen, Employed, PrivateWork, PublicWork, SelfEmployed, FamilyWork, Unemployment)#Percentage of different kinds of employment
+```
+<br/>
+The second dataframe looks like this:
+```{r echo = FALSE}
+library(knitr)
+library(kableExtra)
+kable(head(nyc_tracts))%>%
+    kable_styling()%>%
+    scroll_box(width = "100%", height = "300px")
+```
+
 # Data Cleaning and Processing
 
 After importing the data, we moved on to cleaning and processing. Cleaning the data involved removing the entries that were either irrelevant or incomplete for the purposes of our project. Processing involved geocoding the data, grouping it spatiotemporally, and then computing new metrics to help describe each group.
 
 Grouping the data would allow us to more easily draw observe trends and draw meaningful conclusions, and we decided to group the real estate and crime data entries by zip code and month. The ~250 zip code areas in NYC would give us enough granularity to see the how the myriad of different regions in New York City differ from one another over time, but also enough courseness to guarantee acceptable response times of our visualization app, and ensure that there were usually multiple entries in each group to average across.
 
-## Group crime information by month, year, and zipcode
+## Crime Data
+
+### Cleaning the Crime Data
+
+Generally, the crime data is cleaned as part of the other sections. When the crime scores are taken to classify the crimes and these scores are summed across zipcodes, crimes that could not be classified into defined categories are excluded. While excluding NAs could introduce bias, it is believed that the effect would be consistent across time and population for the analysis. However, it did appear that there was a difference in the reporting for crime scores after 2006, which was accounted for when representing the data visually.
+
+### Assigning Crime Rating
+#### Adding zipcode to each criminal activity
+The df_crime dataframe that contains data about all the crimes committed is first of all purged of all NA rows in the latitude and longitude columns. Then by reverse geocoding, the latitude and longitude values are mapped to a zip code in the following way.
+
+```{r eval = FALSE}
+# These should be taken care of with the higher level Import_All.R:
+# source("../Engm182_Project/Import_Scripts/Import_Crime_Data.R")
+# head(df_crime)
+library(tidyr)
+library(dplyr)
+#Dropping the rows whcih have blank in latitude or longitude column
+df_crime2 <- drop_na(df_crime, Latitude, Longitude)
+
+#Reverse geocoding to find the zip code for each Lonlat
+library("ggmap")
+dset_crime2 <- as.data.frame(df_crime2[,29:28]) 
+loc <- dset_crime2
+res <- lapply(seq(nrow(location)), function(i){ 
+    revgeocode(location[i,], 
+               output = c("all"), 
+               messaging = FALSE, 
+               sensor = FALSE, 
+               override_limit = FALSE)
+})
+```
+
+#### Assigning weights to each crime
+Assign a weight to every crime based on the degree of severity. A violation which includes minor offenses like speeding ticket, public intoxication etc. is assigned a weight of 1. A misdemeanour which can include a simple assault or driving under influence is assigned a wight of 2. These were easy to identify as the LAW_CAT_CD column in df_crime gives the category of the crime (Violation, Misdemeanour or Felony).
+
+```{r eval = FALSE}
+#Assigning weights to each crime
+#Violations are the most minor of offenses. They have been assigned a weight of 1
+#source: https://patrickparrottalaw.com/differences-between-a-violation-a-misdemeanor-and-a-felony/
+df_crime2$weight <- 0
+df_crime2$weight[which(df_crime2$LAW_CAT_CD=="VIOLATION")]=1
+
+#Misdemeanours are more serious than violations but less severe than felonies, they can carry up to a year in jail and have score of 2
+#source: https://patrickparrottalaw.com/differences-between-a-violation-a-misdemeanor-and-a-felony/
+df_crime2$weight[which(df_crime2$LAW_CAT_CD=="MISDEMEANOR")]=2
+```
+<br/>
+Assigning weights to felonies is a little more tricky. Since, felonies include a vast variety of criminal activity, we decided to first divide them into 4 categories, 1st to 4th degree. First-degree felonyincludes murder, rape, kidnapping, arson and fraud. Second-degree felony includes aggravated assault, felony assault, arson, manslaughter, possession of a controlled substance and child molestation. Third-degree felony includes assault and battery, elder abuse, transmission of pornography, driving under the influence, fraud and arson. Finally, fourth-degree felony includes involuntary manslaughter, burglary, larceny and resisting arrest. (These lists are just examples and not exhaustive and are based on a source: https://legaldictionary.net/felony/) From the OFNS_DESC column generate a list of unique keywords and group them into 4 lists pertaining to the type of feloniy. Then, the crime is assigned a weight of 6, 5, 4 or 3 for felonies of 1st degree, 2nd degree, 3rd degree and 4th degree respectively depending on which category the OFNS_DESC column of that crime suggests.
+```{r eval = FALSE}
+#Felonies are the most serious of offenses and will be sub-classified
+#Common law and statutes in most states divide felonies into first through fourth degree felonies, each carrying decreasing penalties
+#source: https://legaldictionary.net/felony/
+
+df_crime2_felony <- subset(df_crime2, df_crime2$LAW_CAT_CD=="FELONY")
+felonytypes <- unique(df_crime2_felony$OFNS_DESC)
+felony_1stdegree <- c("RAPE", "THEFT-FRAUD", "ARSON", "KIDNAPPING & RELATED OFFENSES", "MURDER & NON-NEGL. MANSLAUGHTER", "KIDNAPPING", "KIDNAPPING AND RELATED OFFENSES", "NYS LAWS-UNCLASSIFIED FELONY" )
+felony_2nddegree <- c("FELONY ASSAULT", "FORGERY", "SEX CRIMES", "DANGEROUS DRUGS", "DANGEROUS WEAPONS")
+felony_3rddegree <- c("INTOXICATED/IMPAIRED DRIVING","ROBBERY", "CRIMINAL MISCHIEF & RELATED OF", "PROSTITUTION & RELATED OFFENSES")
+felony_4thdegree <- c("GAMBLING","", "BURGLARY","GRAND LARCENY", "GRAND LARCENY OF MOTOR VEHICLE", "MISCELLANEOUS PENAL LAW", "POSSESSION OF STOLEN PROPERTY", "CHILD ABANDONMENT/NON SUPPORT", "HOMICIDE-NEGLIGENT-VEHICLE", "HOMICIDE-NEGLIGENT,UNCLASSIFIE", "ENDAN WELFARE INCOMP")
+
+df_crime2$weight[which(df_crime2$OFNS_DESC %in% felony_1stdegree == TRUE)]=6
+df_crime2$weight[which(df_crime2$OFNS_DESC %in% felony_2nddegree == TRUE)]=5
+df_crime2$weight[which(df_crime2$OFNS_DESC %in% felony_3rddegree == TRUE)]=4
+df_crime2$weight[which(df_crime2$OFNS_DESC %in% felony_4thdegree == TRUE)]=3
+
+df_crime <- df_crime2
+save(df_crime, file='Data_Crime.rda')
+
+#Extract month and year for each crime
+df_crime3 <- subset(df_crime2, select = c(CMPLNT_FR_DT, OFNS_DESC, LAW_CAT_CD, Longitude, Latitude, weight))
+head(df_crime3)
+```
+
+### Group crime information by month, year, and zipcode
 
 First, the relevant datafiles are imported into the environment and the packages are loaded:
 
@@ -192,7 +355,7 @@ score_by_zip_and_year <- subset(score_by_zip_and_year, select = c(zip_code, year
 save(score_by_zip_and_year, file = "Data_Score_by_year_and_zipcode.rda")
 ```
 
-## Converting coordinates to zipcodes
+### Converting coordinates to zipcodes
 
 There was difficulty with initially processing the location data into a format for analysis. For the crime and census data:
 
@@ -281,6 +444,12 @@ df_crime$geometry<-NULL
 save(df_crime, file='Data_Crime_w_Zipcodes.rda')
 ```
 
+## Census Data
+
+### Cleaning the census data
+<br/>
+After importing the census data in section "02C: Data_Import_Census", no more data cleaning is required as the data was organized into a usable format there itself and the NA values were removed.
+
 ### Processing the census data
 
 First, the packages are loaded:
@@ -345,16 +514,14 @@ colnames(zip_population) <- c("zip_code", "TotalPop", "Men", "Women", "Hispanic"
 save(zip_population, file = "Data_Zip_Population.rda")
 ```
 
+
 ### Source for census tract to zipccode mapping data
 
 The following site includes the most up to date census tract to zipcode information: https://www.huduser.gov/portal/datasets/usps_crosswalk.html
 
 
-## Cleaning the Crime Data
-
-Generally, the crime data is cleaned as part of the other sections. When the crime scores are taken to classify the crimes and these scores are summed across zipcodes, crimes that could not be classified into defined categories are excluded. While excluding NAs could introduce bias, it is believed that the effect would be consistent across time and population for the analysis. However, it did appear that there was a difference in the reporting for crime scores after 2006, which was accounted for when representing the data visually.
-
-## Geocoding the Real Estate Data
+## Real Estate Data
+### Geocoding the Real Estate Data
 
 In order to group the real estate data by zip code, we first need to attach a zip code value to each entry in our data (a process known as "geocoding", or "reverse-geocoding" to be more precise). To do this, we use the [Geoclient API](https://developer.cityofnewyork.us/api/geoclient-api) available on the city's [Developer Portal](https://developer.cityofnewyork.us). Before pulling from the API, we do some quick cleaning by converting the `borough`, `sale_price`, and `gross_square_feet` columns to the `numeric` data type (to make sure they're not incorrectly stored as `character` or `factor` types). Then we filter out some of the data with bad `sale_price` and `gross_square_feet` values, as this makes for fewer API queries and we know we won't want use those entries in our analysis anyway. The last step before pulling from the API is creating the `bbl` column, which is a 10 digit combination of the `borough`, `block`, and `lot` columns. We will pass each entry's `bbl` number to the API, which will then return the zip code (among other data) for that specific plot of land.
 
@@ -388,7 +555,7 @@ bbl_df = geo_bbl(df_housing$bbl, id = APPLICATION_ID, key = API_KEY)
 geocoded_df_housing = bind_cols(df_housing, bbl_df)
 ```
 
-## Cleaning the Real Estate Data
+### Cleaning the Real Estate Data
 
 In the next step, we modify data from a CSV file with all NYC building class codes to include a column labeling the building category of each class code (e.g., Residential, Commercial, Industrial, etc.).
 
@@ -456,7 +623,7 @@ kable(head(cleaned_df_housing, 50), caption = "<p style=\"padding-left:10px\"> *
 
 <br/>
 
-## Grouping the Real Estate Data
+### Grouping the Real Estate Data
 
 Now that we have the real estate geocoded and cleaned, we can group it by aggregating all sales that took place in the same zip code and during the same month. We will create 3 new variables to describe each group: average price per square foot (`avg_price_per_sqft`), total number of sales (`num_sales`), and total proceeds from all sales (`total_proceeds`).
 ```{r}
@@ -499,6 +666,84 @@ kable(head(grouped_housing, 50), caption = "<p style=\"padding-left:10px\"> **gr
     scroll_box(width = "100%", height = "300px")
 ```
 <br/>
+
+## Creating a single dataframe for modeling
+### Section of housing sales data
+First, load the 2 relevant files. Data_Housing.rda (df_housing) contains all the housing sales data. Data_Zip_Population.rda (zip_population) contains the census data for each zip code.
+```{r}
+load(file="Data_Housing.rda")
+load(file="Data_Zip_Population.rda")
+```
+<br/>
+Next, remove rows which are either blank or have NA values in the sale_price or land_square_feet column of df_housing. 
+```{r}
+# Only sales prices > 0 for housing data
+
+# Only take > 0; source: https://stackoverflow.com/questions/33535006/remove-rows-if-it-is-negative-number
+df <- df_housing[df_housing$land_square_feet > 0, ]
+df <- df[df$sale_price > 0, ]
+
+# Get rid of NA values; source: https://stackoverflow.com/questions/48658832/how-to-remove-row-if-it-has-a-na-value-in-one-certain-column/48659101
+df <- df[!is.na(df$sale_price), ]
+df <- df[!is.na(df$land_square_feet), ]
+```
+<br/>
+Create a new dataframe, df_sale, which containse the relevant sales price prediction input variables from the df_housing dataframe. Add 2 more column, sale_year and sale_month, which contain the year and month of the sale. These values are extracted from the sale_date column by using the functions year() and month() respectively.
+<br/>
+Add a new column, crime_score_year. If the sale was completed in the months of January, February or March, add the year just before the sale_year in the crime_score_year column. If the sale was completed in the rest of the months, crime_score_year = sale_year. This is done to map the relevant year's crime score for each sale's analysis. For e.g. if a sale happens in January of 2006, then it doesn't make sense to add the crime score for 2006. Crimes happening in 2005 would have affected that sale's price more than 2006.
+```{r}
+library(lubridate)
+
+#Identify the input variables for sales price prediction
+#Zipcode (will be used to join census and crime data), land_square_feet, gross_square_feet, year built, tax_class_at_time_of_sale, building_class_at_time_of_sale, sale_date (will be used to link crime rating for that year)
+#Subset new dataframe with relevant variables
+df_sale <- subset(df, select = c(zip_code,land_square_feet, gross_square_feet, year_built, tax_class_at_time_of_sale, building_class_at_time_of_sale, sale_date, sale_price))
+df_sale$sale_year <- year(df_sale$sale_date) 
+df_sale$sale_month <- month(df_sale$sale_date)
+#If sale is in months 1, 2, 3 then crime score will be taken from previous year else crime score of that year
+df_sale$crime_score_year <- ifelse(df_sale$sale_month == 1 | df_sale$sale_month == 2 | df_sale$sale_month == 3, df_sale$sale_year-1, df_sale$sale_year)
+```
+
+### Adding the section about census data
+Now, we will add the census data to the housing sales data. First find the zipcodes which are present in both df_sale and zip_population dataframes. Then add the df_sale and zip_population dataframes by these unique zipcodes through the following code. This merged dataframe is saved as df_sale_census.
+```{r}
+#Adding the census data by linking through zipcode
+#Taking a subset of df_sale for only the zip codes for which we have census data
+zip_codes_inhousing <- unique(df_sale$zip_code)
+zip_codes_incensus <- unique(zip_population$zip_code)
+zip_codes_inhousing_incensus <- intersect(zip_codes_inhousing, zip_codes_incensus)
+
+#Merging the sales and census data into one dataframe
+df_sale$zip_code <- as.character(df_sale$zip_code)
+df_sale_census <- merge(df_sale[df_sale$zip_code %in% zip_codes_inhousing_incensus, ], zip_population[zip_population$zip_code %in% zip_codes_inhousing_incensus, ], by = "zip_code")
+```
+
+### Adding the crime score
+Load the file Data_Score_by_year_and_zipcode.rda (score_by_zip_and_year) that was created in section "04B: Data_Processing_Month_Year". Find the zipcodes that are present in both df_sale_census and score_by_zip_and_year and store them in zip_codes_inhousing_incensus_incrime. Merge the df_sale_census and score_by_zip_year dataframes by zipcodes and store them in df_sale_census_crime. Remove all rows from this final dataframe which have a zero value and save this dataframe as Data_sale_census_crime.rda for future analysis.
+```{r}
+load(file = "Data_Score_by_year_and_zipcode.rda")
+#Adding the crime score data for each year
+zip_codes_inhousing_incensus_incrime <- intersect(unique(df_sale_census$zip_code), unique(score_by_zip_and_year$zip_code))
+colnames(score_by_zip_and_year) <- c("zip_code", "crime_score_year", "sum_weight", "weight", "TotalPop")
+df_sale_census_crime <- merge(df_sale_census[df_sale_census$zip_code %in% zip_codes_inhousing_incensus_incrime, ], score_by_zip_and_year[score_by_zip_and_year$zip_code %in% zip_codes_inhousing_incensus_incrime, ], by = c("zip_code", "crime_score_year"))
+df_sale_census_crime <- na.omit(df_sale_census_crime)
+#any(is.na(df_sale_census_crime))
+
+#Remove values of 0
+#source: https://stackoverflow.com/questions/9977686/how-to-remove-rows-with-any-zero-value
+zero_rows = apply(df_sale_census_crime, 1, function(row) all(row != 0))
+df_sale_census_crime <- df_sale_census_crime[zero_rows, ]
+
+save(df_sale_census_crime, file = "Data_sale_census_crime.rda")
+```
+
+```{r echo = FALSE}
+library(knitr)
+library(kableExtra)
+kable(head(df_sale_census_crime), caption = "<p style=\"padding-left:10px\"> **Final Dataframe**</p>") %>%
+    kable_styling() %>%
+    scroll_box(width = "100%", height = "300px")
+```
 
 # Regression Modeling
 
@@ -893,6 +1138,326 @@ Multiple R-squared: 0.2733,	Adjusted R-squared: 0.2726
 </details>
 
 # Machine Learning Modeling
+## Preparing the dataframe for Machine Learning models
+Add the required libraries. Also, load the file Data_sale_census_crime.rda (df_sale_census_crime) that was created in "04D: Data_Processing_Single_Dataframe".
+
+```{r eval=FALSE}
+#Attach packages
+library(caret)
+library(dplyr)
+library(lubridate)
+library(deepnet)
+
+load(file = "Data_sale_census_crime.rda")
+```
+<br/>
+Remove rows that have zero value in any column. Also, make sure that the sale_price column is numeric.
+```{r eval=FALSE}
+#Remove values of 0
+#source: https://stackoverflow.com/questions/9977686/how-to-remove-rows-with-any-zero-value
+zero_rows = apply(df_sale_census_crime, 1, function(row) all(row != 0))
+df_sale_census_crime <- df_sale_census_crime[zero_rows, ]
+
+# Make sure sale prices are numeric
+df_sale_census_crime$sale_price <- as.numeric(df_sale_census_crime$sale_price)
+```
+<br/>
+Instead of looking at the entire data we will look at sale_price < $ 1M and 5M (90% and 97% of the data respectively). This value can be changed through this line of code.
+```{r eval=FALSE}
+source: https://stackoverflow.com/questions/25764810/delete-rows-based-on-range-of-values-in-column
+df_sale_census_crime <- df_sale_census_crime[with(df_sale_census_crime, sale_price <= 5000000), ]
+```
+<br/>
+Instead of using the year_built of a house as an input variable, create another column, "age" of the building. This is calculated as below. Also, remember to remove all zero rows again.
+```{r eval=FALSE}
+#Adding a column about age of building 
+df_sale_census_crime$age <- df_sale_census_crime$sale_year - df_sale_census_crime$year_built
+#Remove negative age values
+df_sale_census_crime <- df_sale_census_crime[age>0, ]
+
+#Remove values of 0
+#source: https://stackoverflow.com/questions/9977686/how-to-remove-rows-with-any-zero-value
+zero_rows = apply(df_sale_census_crime, 1, function(row) all(row != 0))
+df_sale_census_crime <- df_sale_census_crime[zero_rows, ]
+```
+<br/>
+Instead of using the entire database, use 1% of the data for trial run. This can be incrementally increased to 20% and then 100% of the data.
+```{r eval=FALSE}
+setup_stage <- sort(sample(nrow(df_sale_census_crime), nrow(df_sale_census_crime)*.01))
+df_sale_census_crime <- df_sale_census_crime[setup_stage]
+```
+<br/>
+Make sure that gross_square_feet is numeric and all NA values are removed from the dataframe.
+```{r eval=FALSE}
+df_sale_census_crime$gross_square_feet <- as.numeric(df_sale_census_crime$gross_square_feet)
+sapply(df_sale_census_crime, class)
+df_sale_census_crime <- na.omit(df_sale_census_crime)
+any(is.na(df_sale_census_crime))
+```
+
+## Splitting the data into training and test data
+Select data of sales from 2003 to 2013 for training and data from beyond 2013 for testing. Variable y is defined to include just the sale_price; variable y_test is the testing component of y. Variable is a matrix of all the input variables for the models; variable x_test is the testing component of x. Make sure that all the variables are formatted in the right format and all NA rows are removed before proceeding.
+```{r eval=FALSE}
+summary(df_sale_census_crime)
+# select sales from 2003 to 2013 for validation and >2013 for testing
+df_sale_census_crime_test <- df_sale_census_crime[sale_year > 2013,]
+# use data from 2003 to 2013 as training data
+df_sale_census_crime_train <- df_sale_census_crime[sale_year <= 2013,]
+
+# Data setup
+
+# Setup the y output variable
+y <- df_sale_census_crime_train %>% select("sale_price")
+y <- as.numeric(y[[1]]) # Making sure it's numeric
+y_test <- df_sale_census_crime_test %>% select("sale_price")
+
+# Setup the input variable
+x <- df_sale_census_crime_train %>% select("gross_square_feet","PerCapitaIncome", "Unemployed", "TotalPop.x", "Hispanic", "White", "Black", "Native", "Asian", "age", "weight", "sale_year")
+x_test <- df_sale_census_crime_test %>% select("gross_square_feet","PerCapitaIncome", "Unemployed", "TotalPop.x", "Hispanic", "White", "Black", "Native", "Asian", "age", "weight", "sale_year")
+# NEED to make sure each column is the right format (numeric / factor as appropriate)
+
+# BEFORE
+sapply(x, class)
+
+x$gross_square_feet <- as.numeric(x$gross_square_feet)
+x$sale_year <- as.numeric(x$sale_year)
+
+# AFTER (CHECK that these all make sense)
+sapply(x, class)
+
+#Same for x_test
+sapply(x_test, class)
+x_test$sale_year <- as.numeric(x_test$sale_year)
+any(is.na(x_test))
+```
+
+## Running the ML models
+Set the control method of the model as cross validation (cv) or none. It is advisable to do 5-fold or 10-fold cross validation. Cross validation takes a much longer time to run then just running without any cross calidation. Root Mean Square (RMSE) is being used here as the parameter to optimize the models. Mean Average Error (MAE) can also be used instead.
+```{r eval=FALSE}
+# Source: https://machinelearningmastery.com/k-fold-cross-validation/
+control <- trainControl(method="cv", number=10)
+metric <- "RMSE"
+```
+<br/>
+Run the neural network, deep neural net, random forest, bagged cart and k-nearest neighbours models as shown below. 
+```{r eval=FALSE}
+# Neural Network model
+set.seed(7)
+fit.nnet <- train(x, y, method="nnet", metric=metric, trControl=control, linout=TRUE, preProcess="pca") # Need linout TRUE: https://stackoverflow.com/questions/21622975/how-to-model-a-neural-network-through-the-use-of-caret-r
+
+# Deep Neural Net
+set.seed(7)
+fit.dnn <- train(x, y, output="linear", metric=metric, trControl=control, linout=TRUE, preProcess="pca") # Need linout TRUE: https://stackoverflow.com/questions/21622975/how-to-model-a-neural-network-through-the-use-of-caret-r
+
+# Random Forest
+set.seed(7)
+fit.rf <- train(x, y, method="rf", metric=metric, trControl=control, preProcess="pca")
+
+#Trees using genetic algorithm- This is taking extremely long amounts of time so aborting this model
+#set.seed(7)   
+#fit.ga <- train(x, y, method="evtree", metric=metric, trControl=control, preProcess="pca")
+
+#Adaptive- Network based fuzzy inference system-This is taking extremely long amounts of time so aborting this model
+#install.packages("frbs")
+#library(frbs)
+#set.seed(7)   
+#fit.anfis <- train(x, y, method="ANFIS", metric=metric, trControl=control, preProcess="pca")
+
+#Bagged CART
+set.seed(7)   
+fit.bgcrt <- train(x, y, method="treebag", metric=metric, trControl=control, preProcess="pca")
+
+#KNN
+set.seed(7)   
+fit.knn <- train(x, y, method="knn", metric=metric, trControl=control, preProcess="pca")
+```
+
+## Results of validation and training
+Let's see how our models performed in 5-fold cross validation with 1% data (sale_price < 1M), 1% data (sale_price < 5M) and 100% data (sale_price < 1M, only for neural network and bagged cart).
+```{r eval=FALSE}
+results <- resamples(list(nnet=fit.nnet, dnn=fit.dnn, rf=fit.rf, cart=fit.bgcrt, knn=fit.knn))
+summary(results)
+```
+
+```{r comment='', echo=FALSE, results='asis'}
+metric <- c("RMSE", "MAE", "R-squared")
+neural_net1 <- c(525659.6, 280704.9, 0.067)
+deep_neural_net1 <- c(410711.8, 214190.9, 0.422)
+random_forest1 <- c(405804.9, 213700.3, 0.442)
+bagged_cart1 <- c(437638, 241710.5, 0.35)
+k_nearest_neighbors1 <- c(444834.5, 227947.2, 0.334)
+
+Validation_results_0.01_5M <- data.frame(metric, neural_net1, deep_neural_net1, random_forest1, bagged_cart1, k_nearest_neighbors1)
+#source: https://stackoverflow.com/questions/32821741/printing-data-frames-in-r-markdown
+knitr::kable(Validation_results_0.01_5M, caption = "Validation results of 1% data with sale_price <5M", floating.environment="sidewaystable")
+
+neural_net2 <- c(211077.4, 164014.6, 0.107)
+deep_neural_net2 <- c(193911.1, 142400.7, 0.256)
+random_forest2 <- c(193911.1, 142400.7, 0.256)
+bagged_cart2 <- c(200277.8, 151958, 0.196)
+k_nearest_neighbors2 <- c(194873.8, 144403.9, 0.25)
+
+Validation_results_0.01_1M <- data.frame(metric, neural_net2, deep_neural_net2, random_forest2, bagged_cart2, k_nearest_neighbors2)
+
+#source: https://stackoverflow.com/questions/32821741/printing-data-frames-in-r-markdown
+knitr::kable(Validation_results_0.01_1M, caption = "Validation results of 1% data with sale_price <1M", floating.environment="sidewaystable")
+
+neural_net3 <- c(208134.7, 161860.4, 0.097)
+bagged_cart3 <- c(200819.9, 154242.5, 0.159)
+
+Validation_results_1_1M <- data.frame(metric, neural_net3, bagged_cart3)
+
+#source: https://stackoverflow.com/questions/32821741/printing-data-frames-in-r-markdown
+knitr::kable(Validation_results_1_1M, caption = "Validation results of 100% data with sale_price <1M", floating.environment="sidewaystable")
+
+#source: https://www.r-graph-gallery.com/48-grouped-barplot-with-ggplot2.html
+library(ggplot2)
+#Creating a grouped plot1
+models1 <- c(rep("neural_net" , 2) , rep("deep_neural_net" , 2) , rep("random_forest" , 2) , rep("bagged_cart" , 2), rep("k_nearest_neighbor", 2) )
+condition1 <- rep(c("RMSE" , "MAE") , 5)
+metrics1 <- c(neural_net1[1:2], deep_neural_net1[1:2], random_forest1[1:2], bagged_cart1[1:2], k_nearest_neighbors1[1:2])
+data1 <- data.frame(models1,condition1,metrics1)
+
+ggplot(data1, aes(fill=condition1, y= metrics1, x=models1)) + 
+    geom_bar(position="dodge", stat="identity") + ggtitle("Validation results of 1% data with sale_price <5M")
+
+#Creating a grouped plot2
+models2 <- c(rep("neural_net" , 2) , rep("deep_neural_net" , 2) , rep("random_forest" , 2) , rep("bagged_cart" , 2), rep("k_nearest_neighbor", 2) )
+condition2 <- rep(c("RMSE" , "MAE") , 5)
+metrics2 <- c(neural_net2[1:2], deep_neural_net2[1:2], random_forest2[1:2], bagged_cart2[1:2], k_nearest_neighbors2[1:2])
+data2 <- data.frame(models2,condition2,metrics2)
+
+ggplot(data2, aes(fill=condition2, y= metrics2, x=models2)) + 
+    geom_bar(position="dodge", stat="identity") + ggtitle("Validation results of 1% data with sale_price <1M")
+
+#Creating a grouped plot3
+models3 <- c(rep("neural_net" , 2), rep("bagged_cart" , 2))
+condition3 <- rep(c("RMSE" , "MAE") , 2)
+metrics3 <- c(neural_net3[1:2], bagged_cart3[1:2])
+data3 <- data.frame(models3,condition3,metrics3)
+
+ggplot(data3, aes(fill=condition3, y= metrics3, x=models3)) + 
+    geom_bar(position="dodge", stat="identity") + ggtitle("Validation results of 100% data with sale_price <1M")
+```
+
+## Results of predictions on testing data 
+Run the models on the x_test dataset to get the predicted sales price value. 
+```{r eval=FALSE}
+# compare the predictions
+nnet_pred <- predict(fit.nnet, x_test) 
+dnn_pred <- predict(fit.dnn, x_test)
+rf_pred <- predict(fit.rf, x_test)
+bgcrt_pred <- predict(fit.bgcrt, x_test)
+knn_pred <- predict(fit.knn, x_test)
+```
+<br/>
+Find the difference between the predicted values and the y_test values and calculate the RMSE and MAE values as shown below.
+```{r eval=FALSE}
+results3 <- data.frame(cbind(y_test, nnet_pred, dnn_pred, rf_pred, bgcrt_pred, knn_pred))
+#RMSE on test data for each model
+#Calculating diff from actual values
+results3$diff_nnet <- abs(results3$sale_price - results3$nnet_pred)
+results3$diff_dnn <- abs(results3$sale_price - results3$dnn_pred)
+results3$diff_rf <- abs(results3$sale_price - results3$rf_pred)
+results3$diff_bgcrt <- abs(results3$sale_price - results3$bgcrt_pred)
+results3$diff_knn <- abs(results3$sale_price - results3$knn_pred)
+
+#Calculating RMSE
+RMSE_nnet <- sqrt(mean('^'(results3$diff_nnet,2))) #705,330
+RMSE_dnn <- sqrt(mean('^'(results3$diff_dnn,2))) #697,094
+RMSE_rf <- sqrt(mean('^'(results3$diff_rf,2))) #689,789
+RMSE_bgcrt <- sqrt(mean('^'(results3$diff_bgcrt,2))) #634,809
+RMSE_knn <- sqrt(mean('^'(results3$diff_knn,2))) #641,702
+
+#Calculating MAE
+MAE_nnet <- mean(results3$diff_nnet) #401,590
+MAE_dnn <- mean(results3$diff_dnn) #466,828
+MAE_rf <- mean(results3$diff_rf) #462,907
+MAE_bgcrt <- mean(results3$diff_bgcrt) #401,397
+MAE_knn <- mean(results3$diff_knn) #363,609
+```
+<br/>
+Calculate the MAE %error and RMSE %error by dividing the MAE and RMSE values by mean sales price in y_test. This gives a figure which can be easily compared across models. Let's see what the results are.
+```{r eval=FALSE}
+#Calculating %error (RMSE/Average price)
+error_nnet <- RMSE_nnet/mean(results3$sale_price) 
+error_dnn <- RMSE_dnn/mean(results3$sale_price) 
+error_rf <- RMSE_rf/mean(results3$sale_price) 
+error_bgcrt <- RMSE_bgcrt/mean(results3$sale_price) 
+error_knn <- RMSE_knn/mean(results3$sale_price) 
+
+#Calculating %error (MAE/Average price)
+error2_nnet <- MAE_nnet/mean(results3$sale_price) 
+error2_dnn <- MAE_dnn/mean(results3$sale_price) 
+error2_rf <- MAE_rf/mean(results3$sale_price) 
+error2_bgcrt <- MAE_bgcrt/mean(results3$sale_price) 
+error2_knn <- MAE_knn/mean(results3$sale_price) 
+```
+
+```{r comment='', echo=FALSE, results='asis'}
+metric4 <- c("RMSE/mean", "MAE/mean")
+neural_net4 <- c(0.92, 0.53)
+deep_neural_net4 <- c(0.91, 0.61)
+random_forest4 <- c(0.90, 0.61)
+bagged_cart4 <- c(0.83, 0.53)
+k_nearest_neighbors4 <- c(0.84, 0.48)
+
+Testing_results_0.01_5M <- data.frame(metric4, neural_net4, deep_neural_net4, random_forest4, bagged_cart4, k_nearest_neighbors4)
+#source: https://stackoverflow.com/questions/32821741/printing-data-frames-in-r-markdown
+knitr::kable(Testing_results_0.01_5M, caption = "Testing results of 1% data with sale_price <5M", floating.environment="sidewaystable")
+
+neural_net5 <- c(0.50, 0.39)
+deep_neural_net5 <- c(0.47, 0.37)
+random_forest5 <- c(0.47, 0.37)
+bagged_cart5 <- c(0.47, 0.37)
+k_nearest_neighbors5 <- c(0.50, 0.39)
+
+Testing_results_0.01_1M <- data.frame(metric4, neural_net5, deep_neural_net5, random_forest5, bagged_cart5, k_nearest_neighbors5)
+
+#source: https://stackoverflow.com/questions/32821741/printing-data-frames-in-r-markdown
+knitr::kable(Testing_results_0.01_5M, caption = "Testing results of 1% data with sale_price <1M", floating.environment="sidewaystable")
+
+neural_net6 <- c(0.49, 0.40)
+deep_neural_net6 <- c(0.46, 0.37)
+random_forest6 <- c(0.46, 0.37)
+bagged_cart6 <- c(0.49, 0.39)
+
+Testing_results_1_0.2_1M <- data.frame(metric4, neural_net6, deep_neural_net6, random_forest6, bagged_cart6)
+
+#source: https://stackoverflow.com/questions/32821741/printing-data-frames-in-r-markdown
+knitr::kable(Testing_results_1_0.2_1M, caption = "Testing results of 100% (for neural_net & bagged_cart) data and 20% (for deep neural net & random forest and no cross validation) with sale_price <1M", floating.environment="sidewaystable")
+
+#source: https://www.r-graph-gallery.com/48-grouped-barplot-with-ggplot2.html
+library(ggplot2)
+#Creating a grouped plot1
+models4 <- c(rep("neural_net" , 2) , rep("deep_neural_net" , 2) , rep("random_forest" , 2) , rep("bagged_cart" , 2), rep("k_nearest_neighbor", 2) )
+condition4 <- rep(c("RMSE/mean" , "MAE/mean") , 5)
+metrics4 <- c(neural_net4, deep_neural_net4, random_forest4, bagged_cart4, k_nearest_neighbors4)
+data4 <- data.frame(models4,condition4,metrics4)
+
+ggplot(data4, aes(fill=condition4, y= metrics4, x=models4)) + 
+    geom_bar(position="dodge", stat="identity") + ggtitle("Testing results of 1% data with sale_price <5M")
+
+#Creating a grouped plot2
+models5 <- c(rep("neural_net" , 2) , rep("deep_neural_net" , 2) , rep("random_forest" , 2) , rep("bagged_cart" , 2), rep("k_nearest_neighbor", 2) )
+condition5 <- rep(c("RMSE/mean" , "MAE/mean") , 5)
+metrics5 <- c(neural_net5, deep_neural_net5, random_forest5, bagged_cart5, k_nearest_neighbors5)
+data5 <- data.frame(models5,condition5,metrics5)
+
+ggplot(data5, aes(fill=condition5, y= metrics5, x=models5)) + 
+    geom_bar(position="dodge", stat="identity") + ggtitle("Testing results of 1% data with sale_price <1M")
+
+#Creating a grouped plot3
+models6 <- c(rep("neural_net" , 2) , rep("deep_neural_net" , 2) , rep("random_forest" , 2) , rep("bagged_cart" , 2) )
+condition6 <- rep(c("RMSE/mean" , "MAE/mean") , 4)
+metrics6 <- c(neural_net6, deep_neural_net6, random_forest6, bagged_cart6)
+data6 <- data.frame(models6,condition6,metrics6)
+
+ggplot(data6, aes(fill=condition6, y= metrics6, x=models6)) + 
+    geom_bar(position="dodge", stat="identity") + ggtitle("Testing results of 100% (for neural_net & bagged_cart) data and 20% (for deep neural net & random forest and no cross validation) with sale_price <1M")
+```
+<br/>
+As we can see, the model improves a lot when we only look at sale_prices < $ 1M. The final %MAE errors were in the range of 35-40% with the random forest and deep neural net performing the best.
 
 # Shiny App Visualization
 

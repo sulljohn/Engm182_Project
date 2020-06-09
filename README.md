@@ -1,5 +1,8 @@
 # Crime Research Project for ENGM 182
 
+* [View app hosted on shinyapps.io](https://jcnoordsij.shinyapps.io/nyc_vis/)
+* [View project tutorial](https://rpubs.com/jcnoordsij/NYC-crime-re)
+
 ## Instructions to get started
 
 1. Clone the repository (it should give you a folder Engm182_Project)

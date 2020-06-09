@@ -85,6 +85,7 @@ shinyUI(fluidPage(
             )
         ),
         position="left"
-    )
+    ),
+    HTML("<br/><center><a href=\"https://rpubs.com/jcnoordsij/NYC-crime-re\">Project Tuorial</a>  |  <a href=\"https://github.com/sulljohn/Engm182_Project\">Github</a></center><br/>")
 ))
     

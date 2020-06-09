@@ -19,3 +19,4 @@ nyc_vis/rsconnect
 nyc_vis/token.rds
 *.html
 df_sale_census_crime.csv
+Final_Tutorial/rsconnect/
