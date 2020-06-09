@@ -4,7 +4,7 @@ setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
 
 # Run separate processing scripts ...
 
-# 1. Import df_crime and nyc_tracts [BOTH should be fresh versions (just after import_all run)]
+# 1. Import df_crime and nyc_tracts [BOTH should be fresh versions (just after Import.R run)]
 load(file = "Data_Crime.rda")
 load(file = "Data_NYC_Tracts.rda")
 
